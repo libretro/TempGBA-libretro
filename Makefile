@@ -1,11 +1,6 @@
 TARGET      := TempGBA_libretro_psp1.a
-DEBUG       := 1
 CC  = psp-gcc
 AR  = psp-ar
-
-CFLAGS  += -D__LIBRETRO__ -DPSP
-
-CFLAGS  += -D_PSP_FW_VERSION=371
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
@@ -21,6 +16,11 @@ CFLAGS   += -falign-functions=32 -falign-loops -falign-labels -falign-jumps
 CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wmissing-prototypes -Wsign-compare
 #CFLAGS   += -Werror
 
+ASFLAGS = $(CFLAGS)
+
+CFLAGS  += -D__LIBRETRO__ -DPSP
+
+CFLAGS  += -D_PSP_FW_VERSION=371
 
 OBJS := cpu.o mips_stub.o message.o zip.o libretro.o input.o
 OBJS += main.o memory.o video.o sound.o
@@ -33,9 +33,13 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(AR) rcs $@ $(OBJS)
+	cp $@ ../Retroarch/libretro_psp1.a
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+
+%.o: %.S
+	$(CC) -c -o $@ $< $(ASFLAGS)
 
 clean-objs:
 	rm -f $(OBJS)

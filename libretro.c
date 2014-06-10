@@ -86,6 +86,7 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset() {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+#include "pspdisplay.h"
 
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -128,7 +129,6 @@ bool retro_load_game(const struct retro_game_info *info)
 
 // main loop here :
 // TODO: move it to retro_run
-   execute_arm_translate(reg[EXECUTE_CYCLES]);
 
    return true;
 }
@@ -157,9 +157,15 @@ size_t retro_get_memory_size(unsigned id)
 
 void retro_run()
 {
-
    static int frames=0;
    printf("frame = %i\n", frames++);
+
+   u16 *screen_texture = (u16 *)(0x4000000 + (PSP_FRAME_SIZE * 2));
+   sceDisplaySetFrameBuf(screen_texture,256,PSP_DISPLAY_PIXEL_FORMAT_5551,PSP_DISPLAY_SETBUF_NEXTFRAME);
+
+//   reg[CPU_HALT_STATE] = CPU_ACTIVE;
+   execute_arm_translate(reg[EXECUTE_CYCLES]);
+
 
 }
 

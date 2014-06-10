@@ -916,7 +916,7 @@ static void fill_sound_buffer(s16 *stream, u16 length)
   u32 i;
   s16 current_sample;
 
-  if ((option_sound_volume != 0) && (reg[CPU_HALT_STATE] != CPU_STOP))
+  if ((reg[CPU_HALT_STATE] != CPU_STOP))
   {
     for (i = 0; i < length; i++)
     {

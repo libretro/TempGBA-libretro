@@ -245,6 +245,7 @@ static void cpu_interrupt(void)
 
 u32 update_gba(void)
 {
+   int frame_ready = 0;
   s32 i;
   IRQ_TYPE irq_raised = IRQ_NONE;
 
@@ -343,6 +344,7 @@ u32 update_gba(void)
 
 
           vcount = 0;
+          frame_ready = 1;
         }
 
         if (vcount == (dispstat >> 8))
@@ -425,6 +427,10 @@ u32 update_gba(void)
     }
   }
   while (reg[CPU_HALT_STATE] != CPU_ACTIVE);
+
+
+//  if (frame_ready)
+//     reg[CPU_HALT_STATE] = CPU_STOP;
 
   return reg[EXECUTE_CYCLES];
 }

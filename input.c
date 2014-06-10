@@ -32,6 +32,10 @@ void update_input(void)
    unsigned i;
    static uint32_t key = 0;
    uint32_t new_key = 0;
+
+   if (!input_state_cb)
+      return;
+
    for (i = 0; i < sizeof(btn_map) / sizeof(map); i++)
       new_key |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, btn_map[i].retropad) ? btn_map[i].gba : 0;
 
