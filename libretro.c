@@ -9,7 +9,6 @@
 static retro_log_printf_t log_cb;
 static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
 static retro_environment_t environ_cb;
 
 static SceUID cpu_thread_uid;
@@ -43,7 +42,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_height = GBA_SCREEN_HEIGHT;
    info->geometry.aspect_ratio = 0;
    info->timing.fps = 60.0;
-   info->timing.sample_rate = 44100;
+   info->timing.sample_rate = SOUND_FREQUENCY;
 }
 
 
@@ -68,8 +67,6 @@ void retro_set_environment(retro_environment_t cb)
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
-void retro_set_audio_sample(retro_audio_sample_t cb) { }
-void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 
 void retro_set_controller_port_device(unsigned port, unsigned device) {}
@@ -178,6 +175,9 @@ void retro_run()
    input_poll_cb();
    sceKernelWakeupThread(cpu_thread_uid);
    sceKernelSleepThread();
+
+   render_audio();
+
 
    static unsigned int __attribute__((aligned(16))) d_list[32];
 //   void* const texture_vram_p = (void*) (0x44200000 - (256 * 256)); // max VRAM address - frame size

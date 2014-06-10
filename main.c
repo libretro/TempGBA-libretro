@@ -79,9 +79,6 @@ static u8 caches_inited = 0;
 
 static void cpu_interrupt(void);
 
-int main(int argc, char *argv[]);
-int user_main(int argc, char *argv[]);
-
 static void init_main(void);
 
 #define SOUND_UPDATE_FREQUENCY_STEP                                           \

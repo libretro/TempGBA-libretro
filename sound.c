@@ -100,7 +100,6 @@ typedef struct
 DirectSoundStruct ALIGN_DATA direct_sound_channel[2];
 GBCSoundStruct    ALIGN_DATA gbc_sound_channel[4];
 
-s16 ALIGN_DATA psp_sound_buffer[2][SOUND_BUFFER_SIZE];
 s16 ALIGN_DATA sound_buffer[RING_BUFFER_SIZE];
 
 static void fill_sound_buffer(s16 *stream, u16 length);
@@ -1049,5 +1048,18 @@ void sound_read_savestate(SceUID savestate_file)
 void sound_write_mem_savestate(SceUID savestate_file)
 {
   SOUND_SAVESTATE_BODY(WRITE_MEM);
+}
+
+static retro_audio_sample_batch_t audio_batch_cb;
+void retro_set_audio_sample(retro_audio_sample_t cb) { }
+void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_cb = cb; }
+
+void render_audio(void)
+{
+   static s16 ALIGN_DATA local_buffer[1024];
+   while (SOUND_BUFFER_LENGTH > 1024)   {
+      fill_sound_buffer(local_buffer, 1024);
+      audio_batch_cb(local_buffer, 512);
+   }
 }
 

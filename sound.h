@@ -63,5 +63,6 @@ void sound_term(void);
 void sound_write_mem_savestate(SceUID savestate_file);
 void sound_read_savestate(SceUID savestate_file);
 
+void render_audio(void);
 
 #endif /* SOUND_H */
