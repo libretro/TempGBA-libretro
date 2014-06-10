@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
+#include <pspthreadman.h>
+#include <pspgu.h>
 #include "common.h"
 
 static retro_log_printf_t log_cb;
@@ -11,15 +12,25 @@ static retro_input_poll_t input_poll_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 static retro_environment_t environ_cb;
 
+static SceUID cpu_thread_uid;
+SceUID render_thread_uid;
 
+static int cpu_loop(SceSize args, void* argp)
+{
+   sceKernelSleepThread();
+
+   execute_arm_translate(reg[EXECUTE_CYCLES]);
+
+   return 0;
+}
 
 
 void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name = "TempGBA";
    info->library_version = "v0.0.1";
-   info->need_fullpath = false;
-   info->block_extract = false;
+   info->need_fullpath = true;
+   info->block_extract = true;
    info->valid_extensions = "zip|gba|bin|agb|gbz" ;
 }
 
@@ -127,8 +138,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    reset_gba();
 
-// main loop here :
-// TODO: move it to retro_run
+   render_thread_uid = sceKernelGetThreadId();
+   cpu_thread_uid = sceKernelCreateThread ("CPU loop", cpu_loop, 0x10, 0x10000, 0, NULL);
+   sceKernelStartThread(cpu_thread_uid, 0, NULL);
 
    return true;
 }
@@ -154,18 +166,36 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
+static void check_variables(void)
+{
+
+}
 
 void retro_run()
 {
-   static int frames=0;
-   printf("frame = %i\n", frames++);
+   bool updated = false;
 
-   u16 *screen_texture = (u16 *)(0x4000000 + (PSP_FRAME_SIZE * 2));
-   sceDisplaySetFrameBuf(screen_texture,256,PSP_DISPLAY_PIXEL_FORMAT_5551,PSP_DISPLAY_SETBUF_NEXTFRAME);
+   input_poll_cb();
+   sceKernelWakeupThread(cpu_thread_uid);
+   sceKernelSleepThread();
 
-//   reg[CPU_HALT_STATE] = CPU_ACTIVE;
-   execute_arm_translate(reg[EXECUTE_CYCLES]);
+   static unsigned int __attribute__((aligned(16))) d_list[32];
+//   void* const texture_vram_p = (void*) (0x44200000 - (256 * 256)); // max VRAM address - frame size
+   void* const texture_vram_p = (u16 *)(0x4000000 + (PSP_FRAME_SIZE * 2));
 
+   sceGuStart(GU_DIRECT, d_list);
+
+   sceGuTexImage(0, 256, 256, GBA_LINE_SIZE, texture_vram_p);
+   sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
+   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuDisable(GU_BLEND);
+
+   sceGuFinish();
+
+   video_cb(texture_vram_p,GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+       check_variables();
 
 }
 

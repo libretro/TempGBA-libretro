@@ -312,7 +312,9 @@ u32 update_gba(void)
           dispstat |= 0x01;
 
           update_input();
-//TODO update screen was here
+
+          sceKernelWakeupThread(render_thread_uid);
+          sceKernelSleepThread();
 
           update_gbc_sound(cpu_ticks);
           gbc_sound_update = 0;
@@ -344,7 +346,6 @@ u32 update_gba(void)
 
 
           vcount = 0;
-          frame_ready = 1;
         }
 
         if (vcount == (dispstat >> 8))
