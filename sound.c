@@ -1057,9 +1057,9 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_c
 void render_audio(void)
 {
    static s16 ALIGN_DATA local_buffer[1024];
-   while (SOUND_BUFFER_LENGTH > 1024)   {
-      fill_sound_buffer(local_buffer, 1024);
-      audio_batch_cb(local_buffer, 512);
+   while (SOUND_BUFFER_LENGTH > 400)   {
+      fill_sound_buffer(local_buffer, 400);
+      audio_batch_cb(local_buffer, 200);
    }
 }
 
