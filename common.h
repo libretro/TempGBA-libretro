@@ -142,7 +142,6 @@ typedef u32 FIXED08_24;
 
 #include "message.h"
 
-#include "png.h"
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"

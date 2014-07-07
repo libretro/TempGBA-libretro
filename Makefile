@@ -29,13 +29,10 @@ INCDIRS := -I.
 INCDIRS += -I$(shell psp-config --pspsdk-path)/include
 #INCDIRS += -I$(shell psp-config --psp-prefix)/include
 
-all: $(TARGET) copy_lib
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(AR) rcs $@ $(OBJS)
-
-copy_lib:
-	cp $(TARGET) ../Retroarch/libretro_psp1.a
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
@@ -50,4 +47,4 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: copy_lib clean clean-objs
+.PHONY: clean clean-objs

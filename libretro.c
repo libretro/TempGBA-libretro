@@ -136,7 +136,7 @@ bool retro_load_game(const struct retro_game_info *info)
    reset_gba();
 
    render_thread_uid = sceKernelGetThreadId();
-   cpu_thread_uid = sceKernelCreateThread ("CPU loop", cpu_loop, 0x10, 0x10000, 0, NULL);
+   cpu_thread_uid = sceKernelCreateThread ("CPU loop", cpu_loop, 0x10, 0x20000, 0, NULL);
    sceKernelStartThread(cpu_thread_uid, 0, NULL);
 
    return true;
