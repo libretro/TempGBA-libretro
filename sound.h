@@ -23,8 +23,9 @@
 
 
 #define SOUND_SAMPLES   (800)
-//#define SOUND_FREQUENCY (48000)
-#define SOUND_FREQUENCY (64*1024)
+#define SOUND_FREQUENCY (48000)
+//#define SOUND_SAMPLES   (1097)
+//#define SOUND_FREQUENCY (64*1024)
 
 //#define SOUND_FREQUENCY (32 * 1024)
 
