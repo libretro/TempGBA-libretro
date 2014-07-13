@@ -149,6 +149,4 @@ typedef u32 FIXED08_24;
 #include "sound.h"
 #include "main.h"
 
-extern SceUID render_thread_uid;
-
 #endif /* COMMON_H */

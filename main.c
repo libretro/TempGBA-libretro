@@ -240,6 +240,9 @@ static void cpu_interrupt(void)
     dma_transfer(dma + channel);                                              \
   }                                                                           \
 
+//void exit_cpu_loop(void);
+void switch_to_main_thread(void);
+
 u32 update_gba(void)
 {
    int frame_ready = 0;
@@ -310,8 +313,13 @@ u32 update_gba(void)
 
           update_input();
 
-          sceKernelWakeupThread(render_thread_uid);
-          sceKernelSleepThread();
+
+          frame_ready = 1;
+
+#ifdef SINGLE_THREAD
+//          reg[CPU_HALT_STATE] = CPU_STOP;
+//          return reg[EXECUTE_CYCLES];
+#endif
 
           update_gbc_sound(cpu_ticks);
           gbc_sound_update = 0;
@@ -427,8 +435,17 @@ u32 update_gba(void)
   while (reg[CPU_HALT_STATE] != CPU_ACTIVE);
 
 
-//  if (frame_ready)
-//     reg[CPU_HALT_STATE] = CPU_STOP;
+  if (frame_ready)
+  {
+#ifdef SINGLE_THREAD
+     //     exit_cpu_loop();
+     //     reg[CPU_HALT_STATE] = CPU_STOP;
+     //     reg[CHANGED_PC_STATUS] = 1;
+#else
+      switch_to_main_thread();
+#endif
+  }
+//     reg[CPU_HALT_STATE] = CPU_HALT;
 
   return reg[EXECUTE_CYCLES];
 }

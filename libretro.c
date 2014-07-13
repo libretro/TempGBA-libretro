@@ -11,10 +11,25 @@ static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_environment_t environ_cb;
 
-static SceUID cpu_thread_uid;
-SceUID render_thread_uid;
+#ifdef SINGLE_THREAD
+#else
+#include "pspthreadman.h"
+static SceUID main_thread;
+static SceUID cpu_thread;
 
-static int cpu_loop(SceSize args, void* argp)
+void switch_to_main_thread(void)
+{
+   sceKernelWakeupThread(main_thread);
+   sceKernelSleepThread();
+}
+
+static inline void switch_to_cpu_thread(void)
+{
+   sceKernelWakeupThread(cpu_thread);
+   sceKernelSleepThread();
+}
+
+static int cpu_thread_entry(SceSize args, void* argp)
 {
    sceKernelSleepThread();
 
@@ -23,6 +38,19 @@ static int cpu_loop(SceSize args, void* argp)
    return 0;
 }
 
+static inline void init_context_switch(void)
+{
+   main_thread = sceKernelGetThreadId();
+   cpu_thread = sceKernelCreateThread ("CPU thread", cpu_thread_entry, 0x10, 0x20000, 0, NULL);
+   sceKernelStartThread(cpu_thread, 0, NULL);
+}
+
+static inline void deinit_context_switch(void)
+{
+   sceKernelTerminateDeleteThread(cpu_thread);
+}
+
+#endif
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -136,10 +164,11 @@ bool retro_load_game(const struct retro_game_info *info)
 
    reset_gba();
 
-   render_thread_uid = sceKernelGetThreadId();
-   cpu_thread_uid = sceKernelCreateThread ("CPU loop", cpu_loop, 0x10, 0x20000, 0, NULL);
-   sceKernelStartThread(cpu_thread_uid, 0, NULL);
+#ifdef SINGLE_THREAD
 
+#else
+   init_context_switch();
+#endif
    return true;
 }
 
@@ -148,7 +177,9 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 { return false; }
 
 void retro_unload_game()
-{}
+{
+   deinit_context_switch();
+}
 
 unsigned retro_get_region() { return RETRO_REGION_NTSC; }
 
@@ -169,13 +200,155 @@ static void check_variables(void)
 
 }
 
+#include<psprtc.h>
+
+//void io_update_gba(u32 cycles);
+//void resume_cpu_loop(void);
+//void lookup_pc_changed(void);
 void retro_run()
 {
    bool updated = false;
 
+   static bool firstrun = true;
    input_poll_cb();
-   sceKernelWakeupThread(cpu_thread_uid);
-   sceKernelSleepThread();
+
+
+   uint64_t start_tick, end_tick;
+   sceRtcGetCurrentTick(&start_tick);
+
+
+#ifdef SINGLE_THREAD
+   static u32 mips_regs[32];
+   __asm__ volatile (
+   ".set      push         \n"
+   ".set      noreorder    \n"
+   " sw $s0, 0(%0)        \n"
+   " sw $s1, 4(%0)        \n"
+   " sw $s2, 8(%0)        \n"
+   " sw $s3, 12(%0)        \n"
+   " sw $s4, 16(%0)        \n"
+   " sw $s5, 20(%0)        \n"
+   " sw $s6, 24(%0)        \n"
+   " sw $s7, 28(%0)        \n"
+   " sw $a0, 32(%0)        \n"
+   " sw $a1, 36(%0)        \n"
+   " sw $a2, 40(%0)        \n"
+   " sw $a3, 44(%0)        \n"
+   " sw $gp, 48(%0)        \n"
+   " sw $sp, 52(%0)        \n"
+   " sw $fp, 56(%0)        \n"
+   " sw $ra, 60(%0)        \n"
+   ".set      pop          \n"
+   ::"r"(mips_regs)
+   );
+   if(firstrun)
+   {
+      firstrun = false;
+//   reg[CPU_HALT_STATE] = CPU_ACTIVE;
+//   reg[CHANGED_PC_STATUS] = 0;
+   execute_arm_translate(reg[EXECUTE_CYCLES]);
+   }
+   else
+   {
+      resume_cpu_loop();
+//      io_update_gba(reg[EXECUTE_CYCLES]);
+//      __asm__ volatile (
+//      ".set      push         \n"
+//      ".set      noreorder    \n"
+//      " j lookup_pc \n"
+//      " nop \n"
+//      ".set      pop          \n");
+
+//      __asm__ volatile (
+//      ".set      push         \n"
+//      ".set      noreorder    \n"
+//      " lw $ra, 64(%0)        \n"
+//      " addiu	$sp,$sp,-40 \n"
+//      " jr $ra \n"
+//      " nop \n"
+//      ".set      pop          \n"
+//      ::"r"(mips_regs));
+   }
+
+
+
+   __asm__ volatile (
+   ".set      push         \n"
+   ".set      noreorder    \n"
+   ".global exit_cpu_loop  \n"
+   "  exit_cpu_loop:       \n"
+   ".set      pop          \n"
+   );
+
+   __asm__ volatile (
+   ".set      push         \n"
+   ".set      noreorder    \n"
+//   ".set at \n"
+   ".equ REG_R0,              (0 * 4)  \n"
+   ".equ REG_R1,              (1 * 4)  \n"
+   ".equ REG_R2,              (2 * 4)  \n"
+   ".equ REG_R3,              (3 * 4)  \n"
+   ".equ REG_R4,              (4 * 4)  \n"
+   ".equ REG_R5,              (5 * 4)  \n"
+   ".equ REG_R6,              (6 * 4)  \n"
+   ".equ REG_R7,              (7 * 4)  \n"
+   ".equ REG_R8,              (8 * 4)  \n"
+   ".equ REG_R9,              (9 * 4)  \n"
+   ".equ REG_R10,             (10 * 4)  \n"
+   ".equ REG_R11,             (11 * 4)  \n"
+   ".equ REG_R12,             (12 * 4)  \n"
+   ".equ REG_R13,             (13 * 4)  \n"
+   ".equ REG_R14,             (14 * 4)  \n"
+   "sw $3,  REG_R0(%0)  \n"
+   "sw $7,  REG_R1(%0)  \n"
+   "sw $8,  REG_R2(%0)  \n"
+   "sw $9,  REG_R3(%0)  \n"
+   "sw $10, REG_R4(%0)  \n"
+   "sw $11, REG_R5(%0)  \n"
+   "sw $12, REG_R6(%0)  \n"
+   "sw $13, REG_R7(%0)  \n"
+   "sw $14, REG_R8(%0)  \n"
+   "sw $15, REG_R9(%0)  \n"
+   "sw $24, REG_R11(%0)  \n"
+   "sw $25, REG_R12(%0)  \n"
+
+   "sw $18, REG_R10(%0)  \n"
+   "sw $28, REG_R13(%0)  \n"
+   "sw $30, REG_R14(%0)  \n"
+   ".set      pop          \n"
+   ::"r"(reg));
+
+   __asm__ volatile (
+   ".set      push         \n"
+   ".set      noreorder    \n"
+//   "  addiu $sp, 0x2c        \n"
+   " sw $ra, 64(%0)        \n"
+   " lw $s0, 0(%0)        \n"
+   " lw $s1, 4(%0)        \n"
+   " lw $s2, 8(%0)        \n"
+   " lw $s3, 12(%0)        \n"
+   " lw $s4, 16(%0)        \n"
+   " lw $s5, 20(%0)        \n"
+   " lw $s6, 24(%0)        \n"
+   " lw $s7, 28(%0)        \n"
+   " lw $a0, 32(%0)        \n"
+   " lw $a1, 36(%0)        \n"
+   " lw $a2, 40(%0)        \n"
+   " lw $a3, 44(%0)        \n"
+   " lw $gp, 48(%0)        \n"
+   " lw $sp, 52(%0)        \n"
+   " lw $fp, 56(%0)        \n"
+   " lw $ra, 60(%0)        \n"
+   ".set      pop          \n"
+   ::"r"(mips_regs)
+   );
+#else
+   switch_to_cpu_thread();
+#endif
+
+
+   sceRtcGetCurrentTick(&end_tick);
+   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
 
    render_audio();
 

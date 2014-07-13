@@ -2,10 +2,11 @@ TARGET      := TempGBA_libretro_psp1.a
 CC  = psp-gcc
 AR  = psp-ar
 
+
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else
-	CFLAGS += -O2
+        CFLAGS += -O2
 endif
 
 CFLAGS   += -G0
@@ -19,6 +20,7 @@ CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -W
 ASFLAGS = $(CFLAGS)
 
 CFLAGS  += -D__LIBRETRO__ -DPSP
+#CFLAGS  += -DSINGLE_THREAD
 
 CFLAGS  += -D_PSP_FW_VERSION=371
 
@@ -40,11 +42,9 @@ $(TARGET): $(OBJS)
 %.o: %.S
 	$(CC) -c -o $@ $< $(ASFLAGS)
 
-clean-objs:
-	rm -f $(OBJS)
-
 clean:
+#	rm -f libretro.o input.o main.o memory.o video.o sound.o
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean clean-objs
+.PHONY: clean
