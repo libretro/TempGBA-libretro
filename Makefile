@@ -1,12 +1,12 @@
-TARGET      := TempGBA_libretro_psp1.a
+TARGET      := tempgba_libretro_psp1.a
 CC  = psp-gcc
 AR  = psp-ar
 
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -O0 -g
+CFLAGS += -O0 -g
 else
-        CFLAGS += -O2
+CFLAGS += -O2
 endif
 
 CFLAGS   += -G0
@@ -47,4 +47,4 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean
+.PHONY: $(TARGET) clean

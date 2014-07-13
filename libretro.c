@@ -178,7 +178,9 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game()
 {
+#ifndef SINGLE_THREAD
    deinit_context_switch();
+#endif
 }
 
 unsigned retro_get_region() { return RETRO_REGION_NTSC; }
