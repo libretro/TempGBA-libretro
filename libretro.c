@@ -41,7 +41,7 @@ static int cpu_thread_entry(SceSize args, void* argp)
 static inline void init_context_switch(void)
 {
    main_thread = sceKernelGetThreadId();
-   cpu_thread = sceKernelCreateThread ("CPU thread", cpu_thread_entry, 0x10, 0x20000, 0, NULL);
+   cpu_thread = sceKernelCreateThread ("CPU thread", cpu_thread_entry, 0x12, 0x20000, 0, NULL);
    sceKernelStartThread(cpu_thread, 0, NULL);
 }
 
@@ -123,6 +123,19 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset() {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+void error_msg(const char *text)
+{
+   if (log_cb)
+      log_cb(RETRO_LOG_ERROR, text);
+}
+
+void info_msg(const char *text)
+{
+   if (log_cb)
+      log_cb(RETRO_LOG_INFO, text);
+}
+
+
 #include "pspdisplay.h"
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -146,7 +159,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (load_bios(filename_bios) < 0)
    {
-     error_msg(MSG[MSG_ERR_BIOS_NONE], CONFIRMATION_QUIT);
+     error_msg("Could not load BIOS image file.");
      return false;
    }
 
@@ -158,7 +171,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (load_gamepak(info->path) < 0)
    {
-     error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
+     error_msg("Could not load the game file.");
      return false;
    }
 
@@ -211,7 +224,6 @@ void retro_run()
 {
    bool updated = false;
 
-   static bool firstrun = true;
    input_poll_cb();
 
 
@@ -220,6 +232,7 @@ void retro_run()
 
 
 #ifdef SINGLE_THREAD
+   static bool firstrun = true;
    static u32 mips_regs[32];
    __asm__ volatile (
    ".set      push         \n"
@@ -248,11 +261,11 @@ void retro_run()
       firstrun = false;
 //   reg[CPU_HALT_STATE] = CPU_ACTIVE;
 //   reg[CHANGED_PC_STATUS] = 0;
-   execute_arm_translate(reg[EXECUTE_CYCLES]);
+//   execute_arm_translate(reg[EXECUTE_CYCLES]);
    }
    else
    {
-      resume_cpu_loop();
+//      resume_cpu_loop();
 //      io_update_gba(reg[EXECUTE_CYCLES]);
 //      __asm__ volatile (
 //      ".set      push         \n"
@@ -350,7 +363,7 @@ void retro_run()
 
 
    sceRtcGetCurrentTick(&end_tick);
-   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
+//   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
 
    render_audio();
 

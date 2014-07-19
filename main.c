@@ -535,12 +535,6 @@ void change_ext(char *src, char *buffer, const char *extension)
   }
 }
 
-void error_msg(const char *text, u8 confirm)
-{
-   //todo
-}
-
-
 SceUID psp_fopen(const char *filename, const char *mode)
 {
   SceUID tag;
@@ -586,7 +580,7 @@ void *safe_malloc(size_t size)
 
   if ((p = memalign(MEM_ALIGN, size)) == NULL)
   {
-    error_msg(MSG[MSG_ERR_MALLOC], CONFIRMATION_QUIT);
+    error_msg("Could not allocate memory.");
     quit();
   }
 

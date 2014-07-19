@@ -68,9 +68,6 @@
 
 void update_scanline(void);
 
-void print_string(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color);
-void print_string_ext(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color, void *_dest_ptr, u16 pitch);
-
 void clear_texture(u16 color);
 
 void blit_to_screen(u16 *src, u16 w, u16 h, u16 dest_x, u16 dest_y);

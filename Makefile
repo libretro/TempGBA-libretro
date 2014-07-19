@@ -24,8 +24,14 @@ CFLAGS  += -D__LIBRETRO__ -DPSP
 
 CFLAGS  += -D_PSP_FW_VERSION=371
 
-OBJS := cpu.o mips_stub.o message.o zip.o libretro.o input.o
-OBJS += main.o memory.o video.o sound.o
+OBJS := mips_stub.o
+
+#OBJS += griffin.o
+
+OBJS += cpu.o
+OBJS += libretro.o input.o
+OBJS += main.o memory.o video.o
+OBJS += sound.o
 
 INCDIRS := -I.
 INCDIRS += -I$(shell psp-config --pspsdk-path)/include

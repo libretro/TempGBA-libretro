@@ -276,14 +276,14 @@ static u32 evict_gamepak_page(void);
 static void get_backup_id(void);
 
 char backup_filename[MAX_FILE];
-static u32 save_backup(char *name);
+//static u32 save_backup(char *name);
 
 static u32 encode_bcd(u8 value);
 
 #define SAVESTATE_SIZE  0x80000 // 512K Byte (524288 Byte)
 u8 *write_mem_ptr;
-static void memory_write_mem_savestate(SceUID savestate_file);
-static void memory_read_savestate(SceUID savestate_file);
+//static void memory_write_mem_savestate(SceUID savestate_file);
+//static void memory_read_savestate(SceUID savestate_file);
 
 
 u8 *read_rom_block = NULL;
@@ -1588,6 +1588,8 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // Sound FIFO A
     case 0xA0:
+//      ADDRESS16(io_registers, address) = value;
+//      break;
     case 0xA2:
       ADDRESS16(io_registers, address) = value;
       sound_timer_queue(0);
@@ -1595,6 +1597,8 @@ CPU_ALERT_TYPE write_io_register16(u32 address, u32 value)
 
     // Sound FIFO B
     case 0xA4:
+//      ADDRESS16(io_registers, address) = value;
+//      break;
     case 0xA6:
       ADDRESS16(io_registers, address) = value;
       sound_timer_queue(1);
@@ -2656,7 +2660,7 @@ void init_gamepak_buffer(void)
 
     if (gamepak_ram_buffer_size == 0)
     {
-      error_msg(MSG[MSG_ERR_MALLOC], CONFIRMATION_QUIT);
+      error_msg("Could not allocate memory.");
       quit();
     }
 
@@ -3006,49 +3010,49 @@ s32 load_backup(char *name)
   return -1;
 }
 
-static u32 save_backup(char *name)
-{
-  SceUID backup_file;
-  char backup_path[MAX_PATH];
+//static u32 save_backup(char *name)
+//{
+//  SceUID backup_file;
+//  char backup_path[MAX_PATH];
 
-  u32 backup_size = 0;
+//  u32 backup_size = 0;
 
-  if (backup_type != BACKUP_NONE)
-  {
-    sprintf(backup_path, "%s%s", dir_save, name);
+//  if (backup_type != BACKUP_NONE)
+//  {
+//    sprintf(backup_path, "%s%s", dir_save, name);
 
-    FILE_OPEN(backup_file, backup_path, WRITE);
+//    FILE_OPEN(backup_file, backup_path, WRITE);
 
-    if (FILE_CHECK_VALID(backup_file))
-    {
-      switch (backup_type)
-      {
-        case BACKUP_SRAM:
-          backup_size = sram_size;
-          break;
+//    if (FILE_CHECK_VALID(backup_file))
+//    {
+//      switch (backup_type)
+//      {
+//        case BACKUP_SRAM:
+//          backup_size = sram_size;
+//          break;
 
-        case BACKUP_FLASH:
-          backup_size = flash_size;
-          break;
+//        case BACKUP_FLASH:
+//          backup_size = flash_size;
+//          break;
 
-        case BACKUP_EEPROM:
-          backup_size = eeprom_size;
-          break;
+//        case BACKUP_EEPROM:
+//          backup_size = eeprom_size;
+//          break;
 
-        default:
-        case BACKUP_NONE:
-          backup_size = 0x8000;
-          break;
-      }
+//        default:
+//        case BACKUP_NONE:
+//          backup_size = 0x8000;
+//          break;
+//      }
 
-      FILE_WRITE(backup_file, gamepak_backup, backup_size);
-      FILE_CLOSE(backup_file);
-    }
+//      FILE_WRITE(backup_file, gamepak_backup, backup_size);
+//      FILE_CLOSE(backup_file);
+//    }
 
-  }
+//  }
 
-  return backup_size;
-}
+//  return backup_size;
+//}
 
 static char *skip_spaces(char *line_ptr)
 {
@@ -3240,31 +3244,16 @@ static s32 load_gamepak_raw(const char *name)
 
 s32 load_gamepak(const char *name)
 {
-  char *dot_position = strrchr(name, '.');
-
   s32 file_size = -1;
   gamepak_file_large = -1;
 
-  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
+  info_msg("Now Loading...");
 
-  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
-
-
-  if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
-  {
-    file_size = load_file_zip(name);
-  }
-  else
-
-  if (!strcasecmp(dot_position, ".gba") || !strcasecmp(dot_position, ".agb") || !strcasecmp(dot_position, ".bin"))
-  {
-    file_size = load_gamepak_raw(name);
-
-    print_string(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, COLOR15_WHITE, BG_NO_FILL);    
-  }
+  file_size = load_gamepak_raw(name);
 
   if (file_size > 0)
   {
+    info_msg("Searching BACKUP ID");
     gamepak_size = (file_size + 0x7FFF) & ~0x7FFF;
 
     char *p = strrchr(name, '/');
@@ -3290,7 +3279,6 @@ s32 load_gamepak(const char *name)
     change_ext(gamepak_filename, backup_filename, ".sav");
     load_backup(backup_filename);
   }
-
 
   return file_size;
 }
@@ -3427,13 +3415,13 @@ s32 load_bios(char *name)
   FILE_##type(savestate_file, io_registers, 0x400);                           \
 }                                                                             \
 
-static void memory_read_savestate(SceUID savestate_file)
-{
-  MEMORY_SAVESTATE_BODY(READ);
-}
+//static void memory_read_savestate(SceUID savestate_file)
+//{
+//  MEMORY_SAVESTATE_BODY(READ);
+//}
 
-static void memory_write_mem_savestate(SceUID savestate_file)
-{
-  MEMORY_SAVESTATE_BODY(WRITE_MEM);
-}
+//static void memory_write_mem_savestate(SceUID savestate_file)
+//{
+//  MEMORY_SAVESTATE_BODY(WRITE_MEM);
+//}
 

@@ -90,7 +90,9 @@ u32 update_gba(void);
 void reset_gba(void);
 void quit(void);
 
-void error_msg(const char *text, u8 confirm);
+void error_msg(const char *text);
+void info_msg(const char *text);
+
 void change_ext(char *src, char *buffer, const char *extension);
 
 u32 file_length(const char *filename);

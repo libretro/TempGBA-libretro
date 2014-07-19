@@ -137,16 +137,13 @@ typedef u32 FIXED08_24;
   *((u32 *)((u8 *)(base) + (offset)))                                         \
 
 
-#include "zlib.h"
-#include "zip.h"
-
-#include "message.h"
-
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"
 #include "input.h"
 #include "sound.h"
 #include "main.h"
+
+void switch_to_main_thread(void);
 
 #endif /* COMMON_H */
