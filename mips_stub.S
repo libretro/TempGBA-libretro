@@ -132,6 +132,7 @@
 .equ CHANGED_PC_STATUS,   (31 * 4)
 .equ GP_SAVE,             (32 * 4)
 
+.equ REMAINING_CYCLES,    (59 * 4)
 .equ EXECUTE_CYCLES,      (60 * 4)
 
 .equ CPU_DMA_HACK,        (61 * 4)
@@ -2542,6 +2543,7 @@ execute_store_io_u8:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
+  sw $17, REMAINING_CYCLES($16)
   save_registers_0                # save registers 1/2
   jal write_io_register8          # write the value out
   save_registers_1                # save registers 2/2 (delay)
@@ -2655,6 +2657,7 @@ execute_store_io_u16:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
+  sw $17, REMAINING_CYCLES($16)
   save_registers_0                # save registers 1/2
   jal write_io_register16         # write the value out
   save_registers_1                # save registers 2/2 (delay)
@@ -2752,6 +2755,7 @@ execute_store_io_u32:
   addiu $sp, $sp, -4              # make room on the stack for $ra
   sw $ra, ($sp)
 
+  sw $17, REMAINING_CYCLES($16)
   save_registers_0                # save registers 1/2
   jal write_io_register32         # write the value out
   save_registers_1                # save registers 2/2 (delay)

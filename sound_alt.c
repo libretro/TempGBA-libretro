@@ -20,8 +20,6 @@
 
 #include "common.h"
 
-
-#define SOUND_BUFFER_SIZE (SOUND_SAMPLES * 2)
 #define RING_BUFFER_SIZE  (65536)
 
 u32 sound_pause = 0;
@@ -193,9 +191,18 @@ u32 gbc_sound_partial_ticks = 0;
 
 FIXED08_24 gbc_sound_tick_step;
 
+extern u32 cpu_ticks;
+
+static inline u32 get_cpu_ticks (void)
+{
+   return cpu_ticks + reg[EXECUTE_CYCLES] - reg[REMAINING_CYCLES];
+}
+
 
 void gbc_sound_tone_control_low(u8 channel, u32 value)
 {
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + channel;
 
   u32 envelope_volume = (value >> 12) & 0x0F;
@@ -218,11 +225,14 @@ void gbc_sound_tone_control_low(u8 channel, u32 value)
   if (envelope_ticks == 0)
     gs->envelope_ticks = 0;
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_tone_control_high(u8 channel, u32 value)
 {
+//   printf("gbc_sound_tone_control_high\n");
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + channel;
 
   u32 rate = value & 0x7FF;
@@ -240,11 +250,14 @@ void gbc_sound_tone_control_high(u8 channel, u32 value)
     gs->sweep_ticks = gs->sweep_initial_ticks;
   }
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_tone_control_sweep(u32 value)
 {
+//      printf("gbc_sound_tone_control_sweep \n");
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + 0;
 
   u32 sweep_shift = value & 0x07;
@@ -257,11 +270,13 @@ void gbc_sound_tone_control_sweep(u32 value)
 
   gs->sweep_initial_ticks = sweep_ticks;
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_wave_control(u32 value)
 {
+  update_gbc_sound(get_cpu_ticks());
+
   wave_bank = (value >> 6) & 0x01;
   wave_bank_user = (wave_bank ^ 0x01) << 4;
 
@@ -269,11 +284,13 @@ void gbc_sound_wave_control(u32 value)
 
   master_enable = (value >> 7) & 0x01;
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_tone_control_low_wave(u32 value)
 {
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + 2;
 
   gs->length_ticks = 256 - (value & 0xFF);
@@ -283,11 +300,13 @@ void gbc_sound_tone_control_low_wave(u32 value)
   else
     wave_volume = gbc_sound_wave_volume[(value >> 13) & 0x03];
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_tone_control_high_wave(u32 value)
 {
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + 2;
 
   u32 rate = value & 0x7FF;
@@ -302,7 +321,7 @@ void gbc_sound_tone_control_high_wave(u32 value)
     gs->active_flag = 1;
   }
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 void gbc_sound_wave_pattern_ram16(u32 address, u32 value)
@@ -317,6 +336,8 @@ void gbc_sound_wave_pattern_ram16(u32 address, u32 value)
 
 void gbc_sound_noise_control(u32 value)
 {
+  update_gbc_sound(get_cpu_ticks());
+
   GBCSoundStruct *gs = gbc_sound_channel + 3;
 
   u32 dividing_ratio = value & 0x07;
@@ -340,7 +361,7 @@ void gbc_sound_noise_control(u32 value)
     gs->envelope_volume = gs->envelope_initial_volume;
   }
 
-  gbc_sound_update = 1;
+//  gbc_sound_update = 1;
 }
 
 #define GBC_SOUND_CHANNEL_STATUS(channel)                                     \
@@ -468,15 +489,14 @@ static u32 buffer_length(u32 top, u32 base, u32 length)
 #define RENDER_SAMPLE_NULL()                                                  \
 
 #define RENDER_SAMPLE_RIGHT()                                                 \
-  sound_buffer[buffer_index + 1] += current_sample + FP08_24_TO_U32(((s64)next_sample - current_sample) * fifo_fractional); \
+  sound_buffer[buffer_index + 1] += current_sample; \
 
 #define RENDER_SAMPLE_LEFT()                                                  \
-  sound_buffer[buffer_index + 0] += current_sample + FP08_24_TO_U32(((s64)next_sample - current_sample) * fifo_fractional); \
+  sound_buffer[buffer_index + 0] += current_sample; \
 
 #define RENDER_SAMPLE_BOTH()                                                  \
-  dest_sample = current_sample + FP08_24_TO_U32(((s64)next_sample - current_sample) * fifo_fractional); \
-  sound_buffer[buffer_index + 0] += dest_sample;                              \
-  sound_buffer[buffer_index + 1] += dest_sample;                              \
+  sound_buffer[buffer_index + 0] += current_sample;                              \
+  sound_buffer[buffer_index + 1] += current_sample;                              \
 
 #define RENDER_SAMPLES(type)                                                  \
   while (fifo_fractional <= 0x00FFFFFF)                                       \
@@ -500,8 +520,6 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
 
   ds->fifo[fifo_base] = 0;
   fifo_base = (fifo_base + 1) % 32;
-
-  next_sample = ds->fifo[fifo_base] << 4;
 
   if (sound_on == 1)
   {
@@ -781,7 +799,14 @@ void update_gbc_sound(u32 cpu_ticks)
   s32 current_sample;
   s8 *sample_data;
 
+  if ((s32)(cpu_ticks - gbc_sound_last_cpu_ticks) < 0)
+     return;
+
   u64 count_ticks = delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY;
+
+//  printf("cpu_ticks: %u, gbc_sound_last_cpu_ticks: %u\n", cpu_ticks, gbc_sound_last_cpu_ticks);
+//  printf("delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) : %u\n", cpu_ticks - gbc_sound_last_cpu_ticks);
+//  fflush(stdout);
 
   buffer_ticks = FP08_24_TO_U32(count_ticks);
   gbc_sound_partial_ticks += FP08_24_FRACTIONAL_PART(count_ticks);
@@ -919,15 +944,40 @@ static void fill_sound_buffer(s16 *stream, u16 length)
   {
     for (i = 0; i < length; i++)
     {
-      current_sample = sound_buffer[sound_buffer_base];
+       current_sample = sound_buffer[sound_buffer_base];
 
-      current_sample = LIMIT_MAX(current_sample,  2047);
-      current_sample = LIMIT_MIN(current_sample, -2048);
+       current_sample = LIMIT_MAX(current_sample,  2047);
+       current_sample = LIMIT_MIN(current_sample, -2048);
 
-      stream[i] = current_sample << 4;
-      sound_buffer[sound_buffer_base] = 0;
+       stream[i] = current_sample << 4;
+       sound_buffer[sound_buffer_base] = 0;
 
-      sound_buffer_base = (sound_buffer_base + 1) % RING_BUFFER_SIZE;
+       sound_buffer_base = (sound_buffer_base + 1) % RING_BUFFER_SIZE;
+//       current_sample = sound_buffer[sound_buffer_base]+sound_buffer[sound_buffer_base+2]+sound_buffer[sound_buffer_base+4]+sound_buffer[sound_buffer_base+6];
+
+//       current_sample = LIMIT_MAX(current_sample,  (2047*4));
+//       current_sample = LIMIT_MIN(current_sample, -(2048*4));
+
+//       stream[i] = current_sample << 2;
+//       sound_buffer[sound_buffer_base] = 0;
+//       sound_buffer[sound_buffer_base+2] = 0;
+//       sound_buffer[sound_buffer_base+4] = 0;
+//       sound_buffer[sound_buffer_base+6] = 0;
+
+//       i++;
+
+//       current_sample = sound_buffer[sound_buffer_base+1]+sound_buffer[sound_buffer_base+3]+sound_buffer[sound_buffer_base+5]+sound_buffer[sound_buffer_base+7];
+
+//       current_sample = LIMIT_MAX(current_sample,  (2047*4));
+//       current_sample = LIMIT_MIN(current_sample, -(2048*4));
+
+//       stream[i] = current_sample << 2;
+//       sound_buffer[sound_buffer_base+1] = 0;
+//       sound_buffer[sound_buffer_base+3] = 0;
+//       sound_buffer[sound_buffer_base+5] = 0;
+//       sound_buffer[sound_buffer_base+7] = 0;
+
+//       sound_buffer_base = (sound_buffer_base + 8) % RING_BUFFER_SIZE;
     }
   }
   else
@@ -1056,7 +1106,9 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_c
 
 void render_audio(void)
 {
+//   return;
    static s16 ALIGN_DATA local_buffer[1024];
+//   while (SOUND_BUFFER_LENGTH > (512*4))   {
    while (SOUND_BUFFER_LENGTH > 512)   {
       fill_sound_buffer(local_buffer, 512);
       audio_batch_cb(local_buffer, 256);

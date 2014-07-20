@@ -21,16 +21,7 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-
-#define SOUND_SAMPLES   (800)
-#define SOUND_FREQUENCY (48000)
-//#define SOUND_SAMPLES   (1097)
-//#define SOUND_FREQUENCY (64*1024)
-
-//#define SOUND_FREQUENCY (32 * 1024)
-
-// #define SOUND_SAMPLES   (736)
-// #define SOUND_FREQUENCY (44100)
+#define SOUND_FREQUENCY (4 * 32 * 1024)
 
 extern u32 sound_pause;
 

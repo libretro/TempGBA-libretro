@@ -31,7 +31,8 @@ OBJS := mips_stub.o
 OBJS += cpu.o
 OBJS += libretro.o input.o
 OBJS += main.o memory.o video.o
-OBJS += sound.o
+#OBJS += sound.o
+OBJS += sound_alt.o
 
 INCDIRS := -I.
 INCDIRS += -I$(shell psp-config --pspsdk-path)/include
@@ -49,7 +50,7 @@ $(TARGET): $(OBJS)
 	$(CC) -c -o $@ $< $(ASFLAGS)
 
 clean:
-#	rm -f libretro.o input.o main.o memory.o video.o sound.o
+#	rm -f libretro.o main.o memory.o sound.o sound_alt.o
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 

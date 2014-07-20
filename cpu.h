@@ -89,6 +89,7 @@ typedef enum
   CPU_HALT_STATE    = 30,
   CHANGED_PC_STATUS = 31,
 
+  REMAINING_CYCLES  = 59,
   EXECUTE_CYCLES    = 60,
 
   CPU_DMA_HACK      = 61,

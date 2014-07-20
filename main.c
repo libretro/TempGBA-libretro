@@ -442,6 +442,9 @@ u32 update_gba(void)
      //     reg[CPU_HALT_STATE] = CPU_STOP;
      //     reg[CHANGED_PC_STATUS] = 1;
 #else
+//     static u32 lastticks_=0;
+//     printf("cpu_ticks : %u, lastticks_: %u , diff : %u\n",cpu_ticks,lastticks_, cpu_ticks - lastticks_);
+//     lastticks_ = cpu_ticks;
       switch_to_main_thread();
 #endif
   }
