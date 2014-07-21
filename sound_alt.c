@@ -20,7 +20,8 @@
 
 #include "common.h"
 
-#define RING_BUFFER_SIZE  (65536)
+#define RING_BUFFER_SIZE  (0x10000)
+#define RING_BUFFER_MASK  (RING_BUFFER_SIZE - 1)
 
 u32 sound_pause = 0;
 
@@ -105,7 +106,6 @@ static void fill_sound_buffer(s16 *stream, u16 length);
 u8 sound_sleep = 0;
 
 u32 sound_buffer_base = 0;
-static u32 buffer_length(u32 top, u32 base, u32 length);
 
 static void sound_reset_fifo(u8 channel);
 
@@ -420,25 +420,16 @@ void adjust_direct_sound_buffer(u8 channel, u32 cpu_ticks)
   if (partial_ticks > SOUND_BUFFER_TICKS_MASK)
     buffer_ticks++;
 
-  direct_sound_channel[channel].buffer_index = (gbc_sound_buffer_index + (buffer_ticks << 1)) % RING_BUFFER_SIZE;
+  direct_sound_channel[channel].buffer_index = (gbc_sound_buffer_index + (buffer_ticks << 1)) & RING_BUFFER_MASK;
 }
 
 void sound_timer_queue(u8 channel)
 {
   DirectSoundStruct *ds = direct_sound_channel + channel;
 
-  u32 i;
-  u32 fifo_top = ds->fifo_top;
-  s8 *fifo = ds->fifo;
-  s8 *fifo_data = (s8 *)io_registers + (0xA0 + (channel << 2));
+  *((u32*)(ds->fifo + ds->fifo_top)) = *((u32*)((s8 *)io_registers + (0xA0 + (channel << 2))));
 
-  for (i = 0; i < 4; i++)
-  {
-    fifo[fifo_top] = fifo_data[i];
-    fifo_top = (fifo_top + 1) % 32;
-  }
-
-  ds->fifo_top = fifo_top;
+  ds->fifo_top = (ds->fifo_top + 4) & 0x1F;
 }
 
 static void sound_reset_fifo(u8 channel)
@@ -450,18 +441,6 @@ static void sound_reset_fifo(u8 channel)
 
   memset(ds->fifo, 0, 32);
 }
-
-static u32 buffer_length(u32 top, u32 base, u32 length)
-{
-  if (top == base)
-    return 0;
-
-  if (top > base)
-    return top - base;
-
-  return length - base + top;
-}
-
 
 // Unqueue 1 sample from the base of the DS FIFO and place it on the audio
 // buffer for as many samples as necessary. If the DS FIFO is 16 bytes or
@@ -485,7 +464,7 @@ static u32 buffer_length(u32 top, u32 base, u32 length)
   {                                                                           \
     RENDER_SAMPLE_##type();                                                   \
     fifo_fractional += frequency_step;                                        \
-    buffer_index = (buffer_index + 2) % RING_BUFFER_SIZE;                     \
+    buffer_index = (buffer_index + 2) & RING_BUFFER_MASK;                     \
   }                                                                           \
 
 void sound_timer(FIXED08_24 frequency_step, u8 channel)
@@ -501,7 +480,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
   current_sample = ds->fifo[fifo_base] << 4;
 
   ds->fifo[fifo_base] = 0;
-  fifo_base = (fifo_base + 1) % 32;
+  fifo_base = (fifo_base + 1) & 0x1F;
 
   if (sound_on == 1)
   {
@@ -539,7 +518,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
   ds->fifo_base = fifo_base;
   ds->fifo_fractional = fifo_fractional - U32_TO_FP08_24(1);
 
-  if (buffer_length(ds->fifo_top, ds->fifo_base, 32) <= 16)
+  if (((ds->fifo_top - ds->fifo_base) & 0x1F) <= 16)
   {
     if (dma[1].direct_sound_channel == channel)
       dma_transfer(dma + 1);
@@ -662,19 +641,19 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
 #define GBC_SOUND_RENDER_SAMPLES(type, sample_length, envelope_op, sweep_op)  \
   for (i = 0; i < buffer_ticks; i++)                                          \
   {                                                                           \
-    current_sample = sample_data[FP08_24_TO_U32(sample_index) % sample_length]; \
+    current_sample = sample_data[FP08_24_TO_U32(sample_index) & (sample_length - 1)]; \
                                                                               \
     GBC_SOUND_RENDER_SAMPLE_##type();                                         \
                                                                               \
     sample_index += frequency_step;                                           \
-    buffer_index = (buffer_index + 2) % RING_BUFFER_SIZE;                     \
+    buffer_index = (buffer_index + 2) & RING_BUFFER_MASK;                     \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
 
-#define GBC_NOISE_WRAP_FULL 32767
+#define GBC_NOISE_WRAP_FULL (0x7FFF)
 
-#define GBC_NOISE_WRAP_HALF 127
+#define GBC_NOISE_WRAP_HALF (0x7F)
 
 #define GET_NOISE_SAMPLE_FULL()                                               \
   current_sample = ((s32)(noise_table15[noise_index >> 5] << (noise_index & 0x1F)) >> 31) ^ 0x07; \
@@ -692,11 +671,11 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
                                                                               \
     if (sample_index > 0x00FFFFFF)                                            \
     {                                                                         \
-      noise_index = (noise_index + 1) % GBC_NOISE_WRAP_##noise_type;          \
+      noise_index = (noise_index + 1) & GBC_NOISE_WRAP_##noise_type;          \
       sample_index = FP08_24_FRACTIONAL_PART(sample_index);                   \
     }                                                                         \
                                                                               \
-    buffer_index = (buffer_index + 2) % RING_BUFFER_SIZE;                     \
+    buffer_index = (buffer_index + 2) & RING_BUFFER_MASK;                     \
                                                                               \
     UPDATE_TONE_COUNTERS(envelope_op, sweep_op);                              \
   }                                                                           \
@@ -760,10 +739,6 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
                                                                               \
   gbc_sound_wave_update = 0;                                                  \
 }                                                                             \
-
-
-#define SOUND_BUFFER_LENGTH                                                   \
-  buffer_length(gbc_sound_buffer_index, sound_buffer_base, RING_BUFFER_SIZE)  \
 
 
 void update_gbc_sound(u32 cpu_ticks)
@@ -877,7 +852,7 @@ void update_gbc_sound(u32 cpu_ticks)
   pIO_REG(REG_SOUNDCNT_X) = sound_status;
 
   gbc_sound_last_cpu_ticks = cpu_ticks;
-  gbc_sound_buffer_index = (gbc_sound_buffer_index + (buffer_ticks << 1)) % RING_BUFFER_SIZE;
+  gbc_sound_buffer_index = (gbc_sound_buffer_index + (buffer_ticks << 1)) & RING_BUFFER_MASK;
 
 }
 
@@ -931,32 +906,7 @@ static void fill_sound_buffer(s16 *stream, u16 length)
        stream[i] = current_sample << 4;
        sound_buffer[sound_buffer_base] = 0;
 
-       sound_buffer_base = (sound_buffer_base + 1) % RING_BUFFER_SIZE;
-//       current_sample = sound_buffer[sound_buffer_base]+sound_buffer[sound_buffer_base+2]+sound_buffer[sound_buffer_base+4]+sound_buffer[sound_buffer_base+6];
-
-//       current_sample = LIMIT_MAX(current_sample,  (2047*4));
-//       current_sample = LIMIT_MIN(current_sample, -(2048*4));
-
-//       stream[i] = current_sample << 2;
-//       sound_buffer[sound_buffer_base] = 0;
-//       sound_buffer[sound_buffer_base+2] = 0;
-//       sound_buffer[sound_buffer_base+4] = 0;
-//       sound_buffer[sound_buffer_base+6] = 0;
-
-//       i++;
-
-//       current_sample = sound_buffer[sound_buffer_base+1]+sound_buffer[sound_buffer_base+3]+sound_buffer[sound_buffer_base+5]+sound_buffer[sound_buffer_base+7];
-
-//       current_sample = LIMIT_MAX(current_sample,  (2047*4));
-//       current_sample = LIMIT_MIN(current_sample, -(2048*4));
-
-//       stream[i] = current_sample << 2;
-//       sound_buffer[sound_buffer_base+1] = 0;
-//       sound_buffer[sound_buffer_base+3] = 0;
-//       sound_buffer[sound_buffer_base+5] = 0;
-//       sound_buffer[sound_buffer_base+7] = 0;
-
-//       sound_buffer_base = (sound_buffer_base + 8) % RING_BUFFER_SIZE;
+       sound_buffer_base = (sound_buffer_base + 1) & RING_BUFFER_MASK;
     }
   }
   else
@@ -966,7 +916,7 @@ static void fill_sound_buffer(s16 *stream, u16 length)
       stream[i] = 0;
       sound_buffer[sound_buffer_base] = 0;
 
-      sound_buffer_base = (sound_buffer_base + 1) % RING_BUFFER_SIZE;
+      sound_buffer_base = (sound_buffer_base + 1) & RING_BUFFER_MASK;
     }
   }
 }
@@ -1087,8 +1037,7 @@ void render_audio(void)
 {
 //   return;
    static s16 ALIGN_DATA local_buffer[1024];
-//   while (SOUND_BUFFER_LENGTH > (512*4))   {
-   while (SOUND_BUFFER_LENGTH > 512)   {
+   while (((gbc_sound_buffer_index-sound_buffer_base) & RING_BUFFER_MASK) > 512)   {
       fill_sound_buffer(local_buffer, 512);
       audio_batch_cb(local_buffer, 256);
    }

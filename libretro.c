@@ -69,7 +69,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width = GBA_SCREEN_WIDTH;
    info->geometry.max_height = GBA_SCREEN_HEIGHT;
    info->geometry.aspect_ratio = 0;
-   info->timing.fps = ((float)(16 * 1024 * 1024)) / (308 * 228 * 4); // 59.72750057
+   info->timing.fps = ((float) CPU_FREQUENCY) / (308 * 228 * 4); // 59.72750057 hz
    info->timing.sample_rate = SOUND_FREQUENCY;
 //   info->timing.sample_rate = 32 * 1024;
 }
@@ -364,13 +364,23 @@ void retro_run()
 
    sceRtcGetCurrentTick(&end_tick);
 //   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
+   static int frames = 0;
+   static float total = 0.0;
+
+   if ( frames >= 200)
+      total += (end_tick - start_tick);
+
+   if (frames++ == 400)
+      printf("total : %f\n", total / 200.0);
 
    render_audio();
 
 
    static unsigned int __attribute__((aligned(16))) d_list[32];
 //   void* const texture_vram_p = (void*) (0x44200000 - (256 * 256)); // max VRAM address - frame size
-   void* const texture_vram_p = (u16 *)(0x4000000 + (PSP_FRAME_SIZE * 2));
+
+   void* const texture_vram_p = (u16 *)(0x04200000 - 256 * 256 * 2);
+//   sceKernelDcacheWritebackRange(texture_vram_p, GBA_SCREEN_SIZE);
 
    sceGuStart(GU_DIRECT, d_list);
 

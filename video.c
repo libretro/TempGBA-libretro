@@ -40,7 +40,7 @@ s32 ALIGN_DATA affine_reference_x[2];
 s32 ALIGN_DATA affine_reference_y[2];
 
 
-static u16 *screen_texture = (u16 *)(0x4000000 + (PSP_FRAME_SIZE * 2));
+static u16 *screen_texture = (u16 *)(0x04200000 - 256 * 256 * 2);
 
 typedef struct
 {
@@ -3088,6 +3088,7 @@ render_scanline_window_builder(bitmap);
 
 void update_scanline(void)
 {
+//   return;
   u16 dispcnt = pIO_REG(REG_DISPCNT);
   u16 *screen_offset = screen_texture + (pIO_REG(REG_VCOUNT) << 8);
   u8  video_mode = dispcnt & 0x07;
@@ -3143,19 +3144,17 @@ void update_scanline(void)
 
 void clear_texture(u16 color)
 {
-  u32 x, y;
-  u16 *p_dest, *p_dest0;
+  u32 *p_dest = (u32*)screen_texture;
+  u32 color32 = color | (color << 16);
 
-  p_dest0 = screen_texture;
-
-  for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+  while(p_dest != (u32*)(screen_texture + GBA_LINE_SIZE * GBA_SCREEN_HEIGHT))
   {
-    p_dest = p_dest0;
+    u32 *p_dest_max = p_dest + (GBA_SCREEN_WIDTH / 2);
 
-    for (x = 0; x < GBA_SCREEN_WIDTH; x++, p_dest++)
-      *p_dest = color;
+    while(p_dest != p_dest_max)
+      *p_dest++ = color32;
 
-    p_dest0 += GBA_LINE_SIZE;
+    p_dest += (GBA_LINE_SIZE - GBA_SCREEN_WIDTH) / 2;
   }
 }
 

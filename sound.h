@@ -21,7 +21,10 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#define SOUND_FREQUENCY (4 * 32 * 1024)
+#define CPU_FREQUENCY         (1<<24) /* ~16 mhz */
+#define SOUND_FREQUENCY       (1<<18) /* ~256 khz */
+#define SOUND_BUFFER_TICKS    (CPU_FREQUENCY / SOUND_FREQUENCY)  /* 64 */
+#define SOUND_BUFFER_TICKS_MASK    (SOUND_BUFFER_TICKS - 1)
 
 extern u32 sound_pause;
 
