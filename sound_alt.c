@@ -23,8 +23,6 @@
 #define RING_BUFFER_SIZE  (0x10000)
 #define RING_BUFFER_MASK  (RING_BUFFER_SIZE - 1)
 
-u32 sound_pause = 0;
-
 u32 gbc_sound_update = 0;
 
 typedef enum

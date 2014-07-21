@@ -26,8 +26,6 @@
 #define SOUND_BUFFER_TICKS    (CPU_FREQUENCY / SOUND_FREQUENCY)  /* 64 */
 #define SOUND_BUFFER_TICKS_MASK    (SOUND_BUFFER_TICKS - 1)
 
-extern u32 sound_pause;
-
 extern u32 gbc_sound_update;
 void update_gbc_sound(u32 cpu_ticks);
 
@@ -55,7 +53,6 @@ void sound_control_x(u32 value);
 
 void init_sound(void);
 void reset_sound(void);
-void sound_term(void);
 
 
 void sound_write_mem_savestate(SceUID savestate_file);

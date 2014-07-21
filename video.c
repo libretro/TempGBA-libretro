@@ -30,12 +30,6 @@
 #define render_scanline_dest_copy_tile      u16
 #define render_scanline_dest_copy_bitmap    u16
 
-#define TEXTURE_SIZE (256 * 256 * 2)
-#define VOLICON_OFFSET (GBA_SCREEN_HEIGHT + 32)
-
-#define SLICE (64)
-#define VERTEX_COUNT (2 * ((u16)(GBA_SCREEN_WIDTH / SLICE) + ((GBA_SCREEN_WIDTH % SLICE) ? 1 : 0)))
-
 s32 ALIGN_DATA affine_reference_x[2];
 s32 ALIGN_DATA affine_reference_y[2];
 

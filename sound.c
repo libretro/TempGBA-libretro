@@ -24,8 +24,6 @@
 #define SOUND_BUFFER_SIZE (SOUND_SAMPLES * 2)
 #define RING_BUFFER_SIZE  (65536)
 
-u32 sound_pause = 0;
-
 u32 gbc_sound_update = 0;
 
 typedef enum

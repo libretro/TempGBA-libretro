@@ -102,6 +102,15 @@ void retro_set_controller_port_device(unsigned port, unsigned device) {}
 
 void retro_reset()
 {
+#ifndef SINGLE_THREAD
+   deinit_context_switch();
+#endif
+
+   reset_gba();
+
+#ifndef SINGLE_THREAD
+   init_context_switch();
+#endif
 }
 
 
@@ -159,7 +168,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (load_bios(filename_bios) < 0)
    {
-     error_msg("Could not load BIOS image file.");
+     error_msg("Could not load BIOS image file.\n");
      return false;
    }
 
@@ -171,7 +180,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (load_gamepak(info->path) < 0)
    {
-     error_msg("Could not load the game file.");
+     error_msg("Could not load the game file.\n");
      return false;
    }
 

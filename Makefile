@@ -4,9 +4,11 @@ AR  = psp-ar
 
 
 ifeq ($(DEBUG), 1)
-CFLAGS += -O0 -g
+OPTIMIZE	      := -O0 -g
+OPTIMIZE_SAFE  := -O0 -g
 else
-CFLAGS += -O2
+OPTIMIZE	      := -O3
+OPTIMIZE_SAFE  := -O2
 endif
 
 CFLAGS   += -G0
@@ -25,14 +27,16 @@ CFLAGS  += -D__LIBRETRO__ -DPSP
 CFLAGS  += -D_PSP_FW_VERSION=371
 
 OBJS := mips_stub.o
-
-#OBJS += griffin.o
-
 OBJS += cpu.o
-OBJS += libretro.o input.o
-OBJS += main.o memory.o video.o
-#OBJS += sound.o
-OBJS += sound_alt.o
+OBJS += video.o
+
+OBJS += griffin.o
+#OBJS += libretro.o
+#OBJS += input.o
+#OBJS += main.o
+#OBJS += memory.o
+##OBJS += sound.o
+#OBJS += sound_alt.o
 
 INCDIRS := -I.
 INCDIRS += -I$(shell psp-config --pspsdk-path)/include
@@ -44,14 +48,17 @@ $(TARGET): $(OBJS)
 	$(AR) rcs $@ $(OBJS)
 
 %.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(OPTIMIZE) $(INCDIRS)
+
+cpu.o: cpu.c
+	$(CC) -c -o $@ $< $(CFLAGS) $(OPTIMIZE_SAFE) $(INCDIRS)
 
 %.o: %.S
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
 clean:
-#	rm -f libretro.o main.o memory.o sound.o sound_alt.o
+#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: $(TARGET) clean
+.PHONY: $(TARGET) griffin.c clean
