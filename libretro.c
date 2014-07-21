@@ -118,24 +118,18 @@ size_t retro_serialize_size()
 
 bool retro_serialize(void *data, size_t size)
 {
-   int i;
    if (size < SAVESTATE_SIZE)
       return false;
 
    gba_save_state(data);
-   for (i=0; i<64; i++)
-      printf("data[%i] = 0x%08X , \t reg[%i] =  = 0x%08X\n", i, ((u32*)data)[i], i, reg[i]);
+
    return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-   int i;
    if (size < SAVESTATE_SIZE)
       return false;
-
-   for (i=0; i<64; i++)
-      printf("data[%i] = 0x%08X , \t reg[%i] =  = 0x%08X\n", i, ((u32*)data)[i], i, reg[i]);
 
    gba_load_state(data);
 
