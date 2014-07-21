@@ -245,7 +245,6 @@ void switch_to_main_thread(void);
 
 u32 update_gba(void)
 {
-   int frame_ready = 0;
   s32 i;
   IRQ_TYPE irq_raised = IRQ_NONE;
 
@@ -313,13 +312,7 @@ u32 update_gba(void)
 
           update_input();
 
-
-          frame_ready = 1;
-
-#ifdef SINGLE_THREAD
-//          reg[CPU_HALT_STATE] = CPU_STOP;
-//          return reg[EXECUTE_CYCLES];
-#endif
+          switch_to_main_thread();
 
           update_gbc_sound(cpu_ticks);
           gbc_sound_update = 0;
@@ -433,22 +426,6 @@ u32 update_gba(void)
     }
   }
   while (reg[CPU_HALT_STATE] != CPU_ACTIVE);
-
-
-  if (frame_ready)
-  {
-#ifdef SINGLE_THREAD
-     //     exit_cpu_loop();
-     //     reg[CPU_HALT_STATE] = CPU_STOP;
-     //     reg[CHANGED_PC_STATUS] = 1;
-#else
-//     static u32 lastticks_=0;
-//     printf("cpu_ticks : %u, lastticks_: %u , diff : %u\n",cpu_ticks,lastticks_, cpu_ticks - lastticks_);
-//     lastticks_ = cpu_ticks;
-      switch_to_main_thread();
-#endif
-  }
-//     reg[CPU_HALT_STATE] = CPU_HALT;
 
   return reg[EXECUTE_CYCLES];
 }
@@ -592,22 +569,22 @@ void *safe_malloc(size_t size)
 
 
 // type = READ / WRITE_MEM
-#define MAIN_SAVESTATE_BODY(type)                                             \
-{                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, cpu_ticks);                          \
-  FILE_##type##_VARIABLE(savestate_file, video_count);                        \
-  FILE_##type##_VARIABLE(savestate_file, irq_ticks);                          \
-  FILE_##type##_VARIABLE(savestate_file, cpu_init_state);                     \
-  FILE_##type##_ARRAY(savestate_file, timer);                                 \
-}                                                                             \
+#define MAIN_SAVESTATE_BODY(type)                                    \
+{                                                                    \
+  MEM_##type##_VARIABLE(cpu_ticks);                          \
+  MEM_##type##_VARIABLE(video_count);                        \
+  MEM_##type##_VARIABLE(irq_ticks);                          \
+  MEM_##type##_VARIABLE(cpu_init_state);                     \
+  MEM_##type##_ARRAY(timer);                                 \
+}
 
-void main_read_savestate(SceUID savestate_file)
+void main_read_savestate(void)
 {
   MAIN_SAVESTATE_BODY(READ);
 }
 
-void main_write_mem_savestate(SceUID savestate_file)
+void main_write_savestate(void)
 {
-  MAIN_SAVESTATE_BODY(WRITE_MEM);
+  MAIN_SAVESTATE_BODY(WRITE);
 }
 

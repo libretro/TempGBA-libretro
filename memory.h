@@ -233,12 +233,11 @@ void init_gamepak_buffer(void);
 void memory_term(void);
 
 void update_backup(void);
-void update_backup_immediately(void);
 
 extern u8 *write_mem_ptr;
 
-void load_state(char *savestate_filename);
-void save_state(char *savestate_filename, u16 *screen_capture);
+void gba_load_state(const u8 *buffer);
+void gba_save_state(u8* buffer);
 
 
 #define pIO_REG(offset) *(io_registers + (offset))
@@ -253,5 +252,25 @@ void save_state(char *savestate_filename, u16 *screen_capture);
 #define pFETCH_WS16S(resion)  *(fetch_waitstate_s[0]  + (resion))
 #define pFETCH_WS32N(resion)  *(fetch_waitstate_n[1]  + (resion))
 #define pFETCH_WS32S(resion)  *(fetch_waitstate_s[1]  + (resion))
+
+typedef enum
+{
+  BACKUP_SRAM,
+  BACKUP_FLASH,
+  BACKUP_EEPROM,
+  BACKUP_NONE
+} BACKUP_TYPE_TYPE;
+
+typedef enum
+{
+  SRAM_SIZE_32KB = 0x08000,
+  SRAM_SIZE_64KB = 0x10000
+} SRAM_SIZE_TYPE;
+
+extern BACKUP_TYPE_TYPE backup_type;
+extern SRAM_SIZE_TYPE sram_size;
+extern u8 gamepak_backup[1024 * 128];
+
+#define SAVESTATE_SIZE  0x80000 // 512K Byte (524288 Byte)
 
 #endif /* MEMORY_H */

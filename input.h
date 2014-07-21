@@ -47,5 +47,7 @@ extern u32 tilt_sensorY;
 
 void update_input(void);
 
+void input_read_savestate(void);
+void input_write_savestate(void);
 
 #endif /* INPUT_H */

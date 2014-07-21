@@ -3154,17 +3154,17 @@ void clear_texture(u16 color)
 
 
 #define VIDEO_SAVESTATE_BODY(type)                                            \
-  FILE_##type##_ARRAY(savestate_file, affine_reference_x);                    \
-  FILE_##type##_ARRAY(savestate_file, affine_reference_y);                    \
+  MEM_##type##_ARRAY(affine_reference_x);                    \
+  MEM_##type##_ARRAY(affine_reference_y);                    \
 
-void video_read_savestate(SceUID savestate_file)
+void video_read_savestate(void)
 {
   VIDEO_SAVESTATE_BODY(READ);
 }
 
-void video_write_mem_savestate(SceUID savestate_file)
+void video_write_savestate(void)
 {
-  VIDEO_SAVESTATE_BODY(WRITE_MEM);
+  VIDEO_SAVESTATE_BODY(WRITE);
 }
 
 

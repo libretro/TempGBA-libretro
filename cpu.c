@@ -4015,19 +4015,19 @@ void init_cpu(void)
 }
 
 
-#define CPU_SAVESTATE_BODY(type)                                              \
-  FILE_##type(savestate_file, reg, 0x100);                                    \
-  FILE_##type##_ARRAY(savestate_file, spsr);                                  \
-  FILE_##type##_ARRAY(savestate_file, reg_mode);                              \
+#define CPU_SAVESTATE_BODY(type)         \
+  MEM_##type(reg, 0x100);      \
+  MEM_##type##_ARRAY(spsr);      \
+  MEM_##type##_ARRAY(reg_mode);
 
-void cpu_read_savestate(SceUID savestate_file)
+void cpu_read_savestate(void)
 {
   CPU_SAVESTATE_BODY(READ);
 }
 
-void cpu_write_mem_savestate(SceUID savestate_file)
+void cpu_write_savestate(void)
 {
-  CPU_SAVESTATE_BODY(WRITE_MEM);
+  CPU_SAVESTATE_BODY(WRITE);
 }
 
 

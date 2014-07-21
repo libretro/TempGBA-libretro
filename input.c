@@ -27,10 +27,11 @@ u32 tilt_sensorY = 0x800;
 static retro_input_state_t input_state_cb;
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
+static uint32_t key = 0;
+
 void update_input(void)
 {
    unsigned i;
-   static uint32_t key = 0;
    uint32_t new_key = 0;
 
    if (!input_state_cb)
@@ -64,3 +65,18 @@ void update_input(void)
    pIO_REG(REG_P1) = (~key) & 0x3FF;
 }
 
+#define INPUT_SAVESTATE_BODY(type)    \
+{                                     \
+  MEM_##type##_VARIABLE(key); \
+}
+
+
+void input_read_savestate(void)
+{
+  INPUT_SAVESTATE_BODY(READ);
+}
+
+void input_write_savestate(void)
+{
+  INPUT_SAVESTATE_BODY(WRITE);
+}

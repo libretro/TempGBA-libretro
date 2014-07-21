@@ -151,7 +151,7 @@ s32 rtc_bit_count;
 
 
 // Up to 128kb, store SRAM, flash ROM, or EEPROM here.
-static u8 ALIGN_DATA gamepak_backup[1024 * 128];
+u8 ALIGN_DATA gamepak_backup[1024 * 128];
 
 // Write out backup file this many cycles after the most recent
 // backup write.
@@ -159,20 +159,6 @@ static u8 ALIGN_DATA gamepak_backup[1024 * 128];
 
 // If the backup space is written (only update once this hits 0)
 s32 backup_update = WRITE_BACKUP_DELAY + 1;
-
-typedef enum
-{
-  BACKUP_SRAM,
-  BACKUP_FLASH,
-  BACKUP_EEPROM,
-  BACKUP_NONE
-} BACKUP_TYPE_TYPE;
-
-typedef enum
-{
-  SRAM_SIZE_32KB = 0x08000,
-  SRAM_SIZE_64KB = 0x10000
-} SRAM_SIZE_TYPE;
 
 // Keep it 32KB until the upper 64KB is accessed, then make it 64KB.
 
@@ -279,12 +265,6 @@ char backup_filename[MAX_FILE];
 //static u32 save_backup(char *name);
 
 static u32 encode_bcd(u8 value);
-
-#define SAVESTATE_SIZE  0x80000 // 512K Byte (524288 Byte)
-u8 *write_mem_ptr;
-//static void memory_write_mem_savestate(SceUID savestate_file);
-//static void memory_read_savestate(SceUID savestate_file);
-
 
 u8 *read_rom_block = NULL;
 u8 *read_ram_block = NULL;
@@ -3010,49 +2990,49 @@ s32 load_backup(char *name)
   return -1;
 }
 
-//static u32 save_backup(char *name)
-//{
-//  SceUID backup_file;
-//  char backup_path[MAX_PATH];
+static u32 save_backup(char *name)
+{
+  SceUID backup_file;
+  char backup_path[MAX_PATH];
 
-//  u32 backup_size = 0;
+  u32 backup_size = 0;
 
-//  if (backup_type != BACKUP_NONE)
-//  {
-//    sprintf(backup_path, "%s%s", dir_save, name);
+  if (backup_type != BACKUP_NONE)
+  {
+    sprintf(backup_path, "%s%s", dir_save, name);
 
-//    FILE_OPEN(backup_file, backup_path, WRITE);
+    FILE_OPEN(backup_file, backup_path, WRITE);
 
-//    if (FILE_CHECK_VALID(backup_file))
-//    {
-//      switch (backup_type)
-//      {
-//        case BACKUP_SRAM:
-//          backup_size = sram_size;
-//          break;
+    if (FILE_CHECK_VALID(backup_file))
+    {
+      switch (backup_type)
+      {
+        case BACKUP_SRAM:
+          backup_size = sram_size;
+          break;
 
-//        case BACKUP_FLASH:
-//          backup_size = flash_size;
-//          break;
+        case BACKUP_FLASH:
+          backup_size = flash_size;
+          break;
 
-//        case BACKUP_EEPROM:
-//          backup_size = eeprom_size;
-//          break;
+        case BACKUP_EEPROM:
+          backup_size = eeprom_size;
+          break;
 
-//        default:
-//        case BACKUP_NONE:
-//          backup_size = 0x8000;
-//          break;
-//      }
+        default:
+        case BACKUP_NONE:
+          backup_size = 0x8000;
+          break;
+      }
 
-//      FILE_WRITE(backup_file, gamepak_backup, backup_size);
-//      FILE_CLOSE(backup_file);
-//    }
+      FILE_WRITE(backup_file, gamepak_backup, backup_size);
+      FILE_CLOSE(backup_file);
+    }
 
-//  }
+  }
 
-//  return backup_size;
-//}
+  return backup_size;
+}
 
 static char *skip_spaces(char *line_ptr)
 {
@@ -3283,6 +3263,11 @@ s32 load_gamepak(const char *name)
   return file_size;
 }
 
+void update_backup(void)
+{
+   if (backup_filename[0])
+      save_backup(backup_filename);
+}
 
 s32 load_bios(char *name)
 {
@@ -3302,126 +3287,118 @@ s32 load_bios(char *name)
 }
 
 
-#define SAVESTATE_BLOCK(type)                                                 \
-  cpu_##type##_savestate(savestate_file);                                     \
-  input_##type##_savestate(savestate_file);                                   \
-  main_##type##_savestate(savestate_file);                                    \
-  memory_##type##_savestate(savestate_file);                                  \
-  sound_##type##_savestate(savestate_file);                                   \
-  video_##type##_savestate(savestate_file);                                   \
+const u8* gba_state_read_ptr;
+u8* gba_state_write_ptr;
+static void memory_read_savestate(void);
+static void memory_write_savestate(void);
 
-//void load_state(char *savestate_filename)
-//{
-//  SceUID savestate_file;
-//  char savestate_path[MAX_PATH];
+#define SAVESTATE_BLOCK(type)                                         \
+  cpu_##type##_savestate();                                     \
+  input_##type##_savestate();                                   \
+  main_##type##_savestate();                                    \
+  memory_##type##_savestate();                                  \
+  sound_##type##_savestate();                                   \
+  video_##type##_savestate();                                   \
 
-//  sprintf(savestate_path, "%s%s", dir_state, savestate_filename);
+void gba_load_state(const u8* buffer)
+{
+   gba_state_read_ptr = buffer;
+   SAVESTATE_BLOCK(read);
 
-//  scePowerLock(0);
+   clear_metadata_area(METADATA_AREA_EWRAM, CLEAR_REASON_LOADING_STATE);
+   clear_metadata_area(METADATA_AREA_IWRAM, CLEAR_REASON_LOADING_STATE);
+   clear_metadata_area(METADATA_AREA_VRAM,  CLEAR_REASON_LOADING_STATE);
 
-//  FILE_OPEN(savestate_file, savestate_path, READ);
+   oam_update = 1;
+   gbc_sound_update = 1;
+   reg[CHANGED_PC_STATUS] = 1;
+}
 
-//  if (FILE_CHECK_VALID(savestate_file))
-//  {
-//    FILE_SEEK(savestate_file, GBA_SCREEN_SIZE + sizeof(u64), SEEK_SET);
-
-//    SAVESTATE_BLOCK(read);
-//    FILE_CLOSE(savestate_file);
-
-//    clear_metadata_area(METADATA_AREA_EWRAM, CLEAR_REASON_LOADING_STATE);
-//    clear_metadata_area(METADATA_AREA_IWRAM, CLEAR_REASON_LOADING_STATE);
-//    clear_metadata_area(METADATA_AREA_VRAM,  CLEAR_REASON_LOADING_STATE);
-
-//    oam_update = 1;
-//    gbc_sound_update = 1;
-//    reg[CHANGED_PC_STATUS] = 1;
-//  }
-
-//  scePowerUnlock(0);
-//}
-
-//void save_state(char *savestate_filename, u16 *screen_capture)
-//{
-//  SceUID savestate_file;
-//  char savestate_path[MAX_PATH];
-
-//  u8 *savestate_write_buffer;
-
-//  sprintf(savestate_path, "%s%s", dir_state, savestate_filename);
-
-//  savestate_write_buffer = (u8 *)safe_malloc(SAVESTATE_SIZE);
-//  memset(savestate_write_buffer, 0, SAVESTATE_SIZE);
-
-//  write_mem_ptr = savestate_write_buffer;
-
-//  scePowerLock(0);
-
-//  FILE_OPEN(savestate_file, savestate_path, WRITE);
-
-//  if (FILE_CHECK_VALID(savestate_file))
-//  {
-//    FILE_WRITE_MEM(savestate_file, screen_capture, GBA_SCREEN_SIZE);
-
-//    u64 current_time = ticker();
-//    FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
-
-//    SAVESTATE_BLOCK(write_mem);
-//    FILE_WRITE(savestate_file, savestate_write_buffer, SAVESTATE_SIZE);
-//    FILE_CLOSE(savestate_file);
-//  }
-
-//  scePowerUnlock(0);
-
-//  free(savestate_write_buffer);
-//}
+void gba_save_state(u8* buffer)
+{
+  gba_state_write_ptr = buffer;
+  memset(buffer, 0, SAVESTATE_SIZE);
+  SAVESTATE_BLOCK(write);
+}
 
 
-#define MEMORY_SAVESTATE_BODY(type)                                           \
-{                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, backup_type);                        \
-                                                                              \
-  FILE_##type##_VARIABLE(savestate_file, sram_size);                          \
-                                                                              \
-  FILE_##type##_VARIABLE(savestate_file, flash_size);                         \
-  FILE_##type##_VARIABLE(savestate_file, flash_mode);                         \
-  FILE_##type##_VARIABLE(savestate_file, flash_bank);                         \
-  FILE_##type##_VARIABLE(savestate_file, flash_device_id);                    \
-  FILE_##type##_VARIABLE(savestate_file, flash_manufacturer_id);              \
-  FILE_##type##_VARIABLE(savestate_file, flash_command_position);             \
-                                                                              \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_size);                        \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_mode);                        \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_address_length);              \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_address);                     \
-  FILE_##type##_VARIABLE(savestate_file, eeprom_counter);                     \
-  FILE_##type##_ARRAY(savestate_file, eeprom_buffer);                         \
-                                                                              \
-  FILE_##type##_VARIABLE(savestate_file, rtc_state);                          \
-  FILE_##type##_VARIABLE(savestate_file, rtc_write_mode);                     \
-  FILE_##type##_VARIABLE(savestate_file, rtc_command);                        \
-  FILE_##type##_VARIABLE(savestate_file, rtc_status);                         \
-  FILE_##type##_VARIABLE(savestate_file, rtc_data_bytes);                     \
-  FILE_##type##_VARIABLE(savestate_file, rtc_bit_count);                      \
-  FILE_##type##_ARRAY(savestate_file, rtc_registers);                         \
-  FILE_##type##_ARRAY(savestate_file, rtc_data);                              \
-                                                                              \
-  FILE_##type##_ARRAY(savestate_file, dma);                                   \
-                                                                              \
-  FILE_##type(savestate_file, iwram, 0x8000);                                 \
-  FILE_##type(savestate_file, ewram, 0x40000);                                \
-  FILE_##type(savestate_file, vram, 0x18000);                                 \
-  FILE_##type(savestate_file, oam_ram, 0x400);                                \
-  FILE_##type(savestate_file, palette_ram, 0x400);                            \
-  FILE_##type(savestate_file, io_registers, 0x400);                           \
-}                                                                             \
+#define MEMORY_SAVESTATE_BODY(type)                       \
+{                                                         \
+  MEM_##type##_VARIABLE(backup_type);             \
+  MEM_##type##_VARIABLE(sram_size);               \
+  MEM_##type##_VARIABLE(flash_size);              \
+  MEM_##type##_VARIABLE(flash_mode);              \
+  MEM_##type##_VARIABLE(flash_bank);              \
+  MEM_##type##_VARIABLE(flash_device_id);         \
+  MEM_##type##_VARIABLE(flash_manufacturer_id);   \
+  MEM_##type##_VARIABLE(flash_command_position);  \
+  MEM_##type##_VARIABLE(eeprom_size);             \
+  MEM_##type##_VARIABLE(eeprom_mode);             \
+  MEM_##type##_VARIABLE(eeprom_address_length);   \
+  MEM_##type##_VARIABLE(eeprom_address);          \
+  MEM_##type##_VARIABLE(eeprom_counter);          \
+  MEM_##type##_ARRAY(eeprom_buffer);              \
+  MEM_##type##_VARIABLE(rtc_state);               \
+  MEM_##type##_VARIABLE(rtc_write_mode);          \
+  MEM_##type##_VARIABLE(rtc_command);             \
+  MEM_##type##_VARIABLE(rtc_status);              \
+  MEM_##type##_VARIABLE(rtc_data_bytes);          \
+  MEM_##type##_VARIABLE(rtc_bit_count);           \
+  MEM_##type##_ARRAY(rtc_registers);              \
+  MEM_##type##_ARRAY(rtc_data);                   \
+  MEM_##type##_ARRAY(dma);                        \
+  MEM_##type(iwram, 0x8000);                    \
+  MEM_##type(ewram, 0x40000);                   \
+  MEM_##type(vram, 0x18000);                    \
+  MEM_##type(oam_ram, 0x400);                   \
+  MEM_##type(palette_ram, 0x400);               \
+  MEM_##type(io_registers, 0x400);              \
+}
 
-//static void memory_read_savestate(SceUID savestate_file)
-//{
-//  MEMORY_SAVESTATE_BODY(READ);
-//}
+static void memory_read_savestate(void)
+{
+  MEMORY_SAVESTATE_BODY(READ);
+}
 
-//static void memory_write_mem_savestate(SceUID savestate_file)
-//{
-//  MEMORY_SAVESTATE_BODY(WRITE_MEM);
-//}
+static void memory_write_savestate(void)
+{
+  MEMORY_SAVESTATE_BODY(WRITE);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -55,8 +55,8 @@ void init_sound(void);
 void reset_sound(void);
 
 
-void sound_write_mem_savestate(SceUID savestate_file);
-void sound_read_savestate(SceUID savestate_file);
+void sound_write_savestate(void);
+void sound_read_savestate(void);
 
 void render_audio(void);
 

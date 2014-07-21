@@ -196,9 +196,9 @@ extern u32 spsr[7];
 
 void init_cpu(void);
 
-void cpu_write_mem_savestate(SceUID savestate_file);
-void cpu_read_savestate(SceUID savestate_file);
 
+void cpu_read_savestate(void);
+void cpu_write_savestate(void);
 
 #define ARM_IRQ_STATE  ((reg[REG_CPSR] & 0x80) == 0)
 

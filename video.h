@@ -55,8 +55,8 @@ typedef struct
 } BitmapLayerRenderStruct;
 
 
-void video_write_mem_savestate(SceUID savestate_file);
-void video_read_savestate(SceUID savestate_file);
+void video_write_savestate(void);
+void video_read_savestate(void);
 
 
 #endif /* VIDEO_H */

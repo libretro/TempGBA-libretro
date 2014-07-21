@@ -102,30 +102,43 @@ void retro_set_controller_port_device(unsigned port, unsigned device) {}
 
 void retro_reset()
 {
-#ifndef SINGLE_THREAD
    deinit_context_switch();
-#endif
 
+   update_backup();
    reset_gba();
 
-#ifndef SINGLE_THREAD
    init_context_switch();
-#endif
 }
 
 
 size_t retro_serialize_size()
 {
-   return 0;
+   return SAVESTATE_SIZE;
 }
 
 bool retro_serialize(void *data, size_t size)
 {
+   int i;
+   if (size < SAVESTATE_SIZE)
+      return false;
+
+   gba_save_state(data);
+   for (i=0; i<64; i++)
+      printf("data[%i] = 0x%08X , \t reg[%i] =  = 0x%08X\n", i, ((u32*)data)[i], i, reg[i]);
    return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
+   int i;
+   if (size < SAVESTATE_SIZE)
+      return false;
+
+   for (i=0; i<64; i++)
+      printf("data[%i] = 0x%08X , \t reg[%i] =  = 0x%08X\n", i, ((u32*)data)[i], i, reg[i]);
+
+   gba_load_state(data);
+
    return true;
 }
 
@@ -203,18 +216,45 @@ void retro_unload_game()
 #ifndef SINGLE_THREAD
    deinit_context_switch();
 #endif
+   update_backup();
 }
 
 unsigned retro_get_region() { return RETRO_REGION_NTSC; }
 
 void *retro_get_memory_data(unsigned id)
 {
+//   switch (id)
+//   {
+//   case RETRO_MEMORY_SAVE_RAM:
+//      return gamepak_backup;
+//   }
 
    return 0;
 }
 
 size_t retro_get_memory_size(unsigned id)
 {
+//   switch (id)
+//   {
+//   case RETRO_MEMORY_SAVE_RAM:
+//      switch(backup_type)
+//      {
+//      case BACKUP_SRAM:
+//         return sram_size;
+
+//      case BACKUP_FLASH:
+//         return flash_size;
+
+//      case BACKUP_EEPROM:
+//         return eeprom_size;
+
+//      case BACKUP_NONE:
+//         return 0x0;
+
+//      default:
+//         return 0x8000;
+//      }
+//   }
 
    return 0;
 }

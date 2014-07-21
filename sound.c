@@ -1006,32 +1006,32 @@ void init_sound(void)
 
 #define SOUND_SAVESTATE_BODY(type)                                          \
 {                                                                           \
-  FILE_##type##_VARIABLE(savestate_file, sound_on);                         \
-  FILE_##type##_VARIABLE(savestate_file, sound_buffer_base);                \
+  MEM_##type##_VARIABLE(sound_on);                         \
+  MEM_##type##_VARIABLE(sound_buffer_base);                \
                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_buffer_index);           \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_last_cpu_ticks);         \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_partial_ticks);          \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_left);     \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume_right);    \
-  FILE_##type##_VARIABLE(savestate_file, gbc_sound_master_volume);          \
+  MEM_##type##_VARIABLE(gbc_sound_buffer_index);           \
+  MEM_##type##_VARIABLE(gbc_sound_last_cpu_ticks);         \
+  MEM_##type##_VARIABLE(gbc_sound_partial_ticks);          \
+  MEM_##type##_VARIABLE(gbc_sound_master_volume_left);     \
+  MEM_##type##_VARIABLE(gbc_sound_master_volume_right);    \
+  MEM_##type##_VARIABLE(gbc_sound_master_volume);          \
                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, master_enable);                    \
-  FILE_##type##_VARIABLE(savestate_file, wave_type);                        \
-  FILE_##type##_VARIABLE(savestate_file, wave_bank);                        \
-  FILE_##type##_VARIABLE(savestate_file, wave_bank_user);                   \
-  FILE_##type##_VARIABLE(savestate_file, wave_volume);                      \
-  FILE_##type##_ARRAY(savestate_file, wave_samples);                        \
-  FILE_##type##_ARRAY(savestate_file, wave_ram_data);                       \
+  MEM_##type##_VARIABLE(master_enable);                    \
+  MEM_##type##_VARIABLE(wave_type);                        \
+  MEM_##type##_VARIABLE(wave_bank);                        \
+  MEM_##type##_VARIABLE(wave_bank_user);                   \
+  MEM_##type##_VARIABLE(wave_volume);                      \
+  MEM_##type##_ARRAY(wave_samples);                        \
+  MEM_##type##_ARRAY(wave_ram_data);                       \
                                                                             \
-  FILE_##type##_VARIABLE(savestate_file, noise_type);                       \
-  FILE_##type##_VARIABLE(savestate_file, noise_index);                      \
+  MEM_##type##_VARIABLE(noise_type);                       \
+  MEM_##type##_VARIABLE(noise_index);                      \
                                                                             \
-  FILE_##type##_ARRAY(savestate_file, direct_sound_channel);                \
-  FILE_##type##_ARRAY(savestate_file, gbc_sound_channel);                   \
+  MEM_##type##_ARRAY(direct_sound_channel);                \
+  MEM_##type##_ARRAY(gbc_sound_channel);                   \
 }                                                                           \
 
-void sound_read_savestate(SceUID savestate_file)
+void sound_read_savestate(void)
 {
   u32 i;
 
@@ -1043,9 +1043,9 @@ void sound_read_savestate(SceUID savestate_file)
     gbc_sound_channel[i].sample_data = square_pattern_duty[2];
 }
 
-void sound_write_mem_savestate(SceUID savestate_file)
+void sound_write_savestate(void)
 {
-  SOUND_SAVESTATE_BODY(WRITE_MEM);
+  SOUND_SAVESTATE_BODY(WRITE);
 }
 
 static retro_audio_sample_batch_t audio_batch_cb;

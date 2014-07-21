@@ -75,34 +75,35 @@
 #define FILE_SEEK(filename_tag, offset, type)                                 \
   sceIoLseek(filename_tag, offset, PSP_##type)                                \
 
-#define FILE_WRITE_MEM(filename_tag, buffer, size)                            \
+#define MEM_WRITE(var_ptr, size)                                 \
 {                                                                             \
-  memcpy(write_mem_ptr, buffer, size);                                        \
-  write_mem_ptr += (size);                                                    \
+  memcpy(gba_state_write_ptr, var_ptr, size);                                              \
+  gba_state_write_ptr += (size);                                                          \
 }                                                                             \
+
+#define MEM_READ(var_ptr, size)                                  \
+{                                                                             \
+  memcpy(var_ptr, gba_state_read_ptr, size);                                              \
+  gba_state_read_ptr += (size);                                                          \
+}
 
 // These must be variables, not constants.
 
-#define FILE_READ_VARIABLE(filename_tag, variable)                            \
-  FILE_READ(filename_tag, &variable, sizeof(variable))                        \
+#define MEM_READ_VARIABLE(variable)                             \
+  MEM_READ(&variable, sizeof(variable))                        \
 
-#define FILE_WRITE_VARIABLE(filename_tag, variable)                           \
-  FILE_WRITE(filename_tag, &variable, sizeof(variable))                       \
-
-#define FILE_WRITE_MEM_VARIABLE(filename_tag, variable)                       \
-  FILE_WRITE_MEM(filename_tag, &variable, sizeof(variable))                   \
+#define MEM_WRITE_VARIABLE(variable)                            \
+  MEM_WRITE(&variable, sizeof(variable))                        \
 
 // These must be statically declared arrays (ie, global or on the stack,
 // not dynamically allocated on the heap)
 
-#define FILE_READ_ARRAY(filename_tag, array)                                  \
-  FILE_READ(filename_tag, array, sizeof(array))                               \
 
-#define FILE_WRITE_ARRAY(filename_tag, array)                                 \
-  FILE_WRITE(filename_tag, array, sizeof(array))                              \
+#define MEM_READ_ARRAY(array)                                   \
+  MEM_READ(array, sizeof(array))                               \
 
-#define FILE_WRITE_MEM_ARRAY(filename_tag, array)                             \
-  FILE_WRITE_MEM(filename_tag, array, sizeof(array))                          \
+#define MEM_WRITE_ARRAY(array)                                  \
+  MEM_WRITE(array, sizeof(array))                               \
 
 
 typedef u32 FIXED08_24;
@@ -145,5 +146,8 @@ typedef u32 FIXED08_24;
 #include "main.h"
 
 void switch_to_main_thread(void);
+extern volatile bool save_state_loaded;
+extern const u8* gba_state_read_ptr;
+extern u8* gba_state_write_ptr;
 
 #endif /* COMMON_H */

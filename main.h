@@ -104,8 +104,8 @@ void psp_fclose(SceUID filename_tag);
 
 void *safe_malloc(size_t size);
 
-void main_write_mem_savestate(SceUID savestate_file);
-void main_read_savestate(SceUID savestate_file);
+void main_write_savestate(void);
+void main_read_savestate(void);
 
 
 #endif /* MAIN_H */
