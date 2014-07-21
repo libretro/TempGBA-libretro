@@ -88,7 +88,7 @@ extern u32 dma_cycle_count;
 u32 update_gba(void);
 
 void reset_gba(void);
-void quit(void);
+void quit_gba(void);
 
 void error_msg(const char *text);
 void info_msg(const char *text);

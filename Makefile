@@ -57,8 +57,8 @@ cpu.o: cpu.c
 	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
 clean:
-#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
-	rm -f $(OBJS)
+	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
+#	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: $(TARGET) griffin.c clean

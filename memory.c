@@ -2641,7 +2641,7 @@ void init_gamepak_buffer(void)
     if (gamepak_ram_buffer_size == 0)
     {
       error_msg("Could not allocate memory.");
-      quit();
+      quit_gba();
     }
 
     gamepak_rom = (u8 *)memalign(MEM_ALIGN, gamepak_ram_buffer_size);

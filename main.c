@@ -479,7 +479,7 @@ static void init_main(void)
 
 
 
-void quit(void)
+void quit_gba(void)
 {
   memory_term();
 }
@@ -561,7 +561,7 @@ void *safe_malloc(size_t size)
   if ((p = memalign(MEM_ALIGN, size)) == NULL)
   {
     error_msg("Could not allocate memory.");
-    quit();
+    quit_gba();
   }
 
   return p;

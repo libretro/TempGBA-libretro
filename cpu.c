@@ -2798,7 +2798,7 @@ static void thumb_flag_status(BlockDataThumbType *block_data, u16 opcode)
         char buffer[80];                                                      \
         sprintf(buffer, "bad jump %08x (%08x)", (int)pc, (int)reg[REG_PC]);   \
         info_msg(buffer);             \
-        quit();                                                               \
+        quit_gba();                                                               \
       }                                                                       \
       block_address = (u8 *)NULL;                                             \
       break;                                                                  \

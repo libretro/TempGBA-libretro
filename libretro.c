@@ -77,10 +77,13 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_init()
 {
+   init_gamepak_buffer();
+   init_sound();
 }
 
 void retro_deinit()
 {
+   quit_gba();
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -178,10 +181,6 @@ bool retro_load_game(const struct retro_game_info *info)
      error_msg("Could not load BIOS image file.\n");
      return false;
    }
-
-   init_gamepak_buffer();
-
-   init_sound();
 
    gamepak_filename[0] = 0;
 
