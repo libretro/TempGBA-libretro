@@ -107,8 +107,6 @@ u8 sound_sleep = 0;
 u32 sound_buffer_base = 0;
 static u32 buffer_length(u32 top, u32 base, u32 length);
 
-static u64 delta_ticks(u32 ticks, u32 last_ticks);
-
 static void sound_reset_fifo(u8 channel);
 
 u8 sound_on = 0;
@@ -411,24 +409,15 @@ void sound_control_x(u32 value)
   }
 }
 
-
-static inline u64 delta_ticks(u32 now_ticks, u32 last_ticks)
-{
-    return (u64)(now_ticks - last_ticks);
-}
-
 void adjust_direct_sound_buffer(u8 channel, u32 cpu_ticks)
 {
-  u64 count_ticks;
   u32 buffer_ticks, partial_ticks;
+  u32 delta_ticks = cpu_ticks - gbc_sound_last_cpu_ticks;
 
-  count_ticks = delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY;
+  buffer_ticks = delta_ticks / SOUND_BUFFER_TICKS;
+  partial_ticks = gbc_sound_partial_ticks + (delta_ticks & SOUND_BUFFER_TICKS_MASK);
 
-
-  buffer_ticks = FP08_24_TO_U32(count_ticks);
-  partial_ticks = gbc_sound_partial_ticks + FP08_24_FRACTIONAL_PART(count_ticks);
-
-  if (partial_ticks > 0x00FFFFFF)
+  if (partial_ticks > SOUND_BUFFER_TICKS_MASK)
     buffer_ticks++;
 
   direct_sound_channel[channel].buffer_index = (gbc_sound_buffer_index + (buffer_ticks << 1)) % RING_BUFFER_SIZE;
@@ -792,22 +781,19 @@ void update_gbc_sound(u32 cpu_ticks)
   s32 current_sample;
   s8 *sample_data;
 
-  if ((s32)(cpu_ticks - gbc_sound_last_cpu_ticks) < 0)
+
+  u32 delta_ticks = cpu_ticks - gbc_sound_last_cpu_ticks;
+
+  if ((s32)(delta_ticks) < 0)
      return;
 
-  u64 count_ticks = delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY;
+  buffer_ticks = delta_ticks / SOUND_BUFFER_TICKS;
+  gbc_sound_partial_ticks += (delta_ticks & SOUND_BUFFER_TICKS_MASK);
 
-//  printf("cpu_ticks: %u, gbc_sound_last_cpu_ticks: %u\n", cpu_ticks, gbc_sound_last_cpu_ticks);
-//  printf("delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) : %u\n", cpu_ticks - gbc_sound_last_cpu_ticks);
-//  fflush(stdout);
-
-  buffer_ticks = FP08_24_TO_U32(count_ticks);
-  gbc_sound_partial_ticks += FP08_24_FRACTIONAL_PART(count_ticks);
-
-  if (gbc_sound_partial_ticks > 0x00FFFFFF)
+  if (gbc_sound_partial_ticks > SOUND_BUFFER_TICKS_MASK)
   {
     buffer_ticks++;
-    gbc_sound_partial_ticks &= 0x00FFFFFF;
+    gbc_sound_partial_ticks &= SOUND_BUFFER_TICKS_MASK;
   }
 
   u16 sound_status = pIO_REG(REG_SOUNDCNT_X) & 0xFFF0;
