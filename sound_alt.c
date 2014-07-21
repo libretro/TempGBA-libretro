@@ -123,7 +123,7 @@ u8 ALIGN_DATA wave_ram_data[32];
 s8 ALIGN_DATA wave_samples[64];
 const u32 ALIGN_DATA gbc_sound_wave_volume[4] = { 0, 16384, 8192, 4096 };
 
-u8 noise_type = 0;
+int noise_type = 0;
 u32 noise_index = 0;
 u32 ALIGN_DATA noise_table15[1024];
 u32 ALIGN_DATA noise_table7[4];
@@ -241,7 +241,7 @@ void gbc_sound_tone_control_high(u8 channel, u32 value)
   gs->frequency_step = FLOAT_TO_FP08_24((131072.0 * 8.0 / SOUND_FREQUENCY) / (2048 - rate));
   gs->length_status = (value >> 14) & 0x01;
 
-  if ((value & 0x8000) != 0)
+  if (value & 0x8000)
   {
     gs->active_flag = 1;
     gs->sample_index -= FLOAT_TO_FP08_24(1.0 / 12.0);
@@ -295,7 +295,7 @@ void gbc_sound_tone_control_low_wave(u32 value)
 
   gs->length_ticks = 256 - (value & 0xFF);
 
-  if ((value & 0x8000) != 0)
+  if (value & 0x8000)
     wave_volume = 12288;
   else
     wave_volume = gbc_sound_wave_volume[(value >> 13) & 0x03];
@@ -315,7 +315,7 @@ void gbc_sound_tone_control_high_wave(u32 value)
   gs->frequency_step = FLOAT_TO_FP08_24((2097152.0 / SOUND_FREQUENCY) / (2048 - rate));
   gs->length_status = (value >> 14) & 0x01;
 
-  if ((value & 0x8000) != 0)
+  if (value & 0x8000)
   {
     gs->sample_index = 0;
     gs->active_flag = 1;
@@ -351,7 +351,7 @@ void gbc_sound_noise_control(u32 value)
   noise_type = (value >> 3) & 0x01;
   gs->length_status = (value >> 14) & 0x01;
 
-  if ((value & 0x8000) != 0)
+  if (value & 0x8000)
   {
     noise_index = 0;
 
@@ -390,19 +390,17 @@ void sound_control_high(u32 value)
   direct_sound_channel[1].volume = (value >>  3) & 0x01;
   direct_sound_channel[1].status = (value >> 12) & 0x03;
 
-  if ((value & 0x0800) != 0)
+  if (value & 0x0800)
     sound_reset_fifo(0);
 
-  if ((value & 0x8000) != 0)
+  if (value & 0x8000)
     sound_reset_fifo(1);
 }
 
 void sound_control_x(u32 value)
 {
-  if ((value & 0x80) != 0)
-  {
+  if (value & 0x80)
     sound_on = 1;
-  }
   else
   {
     gbc_sound_channel[0].active_flag = 0;
@@ -414,15 +412,9 @@ void sound_control_x(u32 value)
 }
 
 
-static u64 delta_ticks(u32 now_ticks, u32 last_ticks)
+static inline u64 delta_ticks(u32 now_ticks, u32 last_ticks)
 {
-  if (now_ticks == last_ticks)
-    return 0ULL;
-
-  if (now_ticks > last_ticks)
-    return (u64)now_ticks - last_ticks;
-
-  return 4294967296ULL - last_ticks + now_ticks;
+    return (u64)(now_ticks - last_ticks);
 }
 
 void adjust_direct_sound_buffer(u8 channel, u32 cpu_ticks)
@@ -431,6 +423,7 @@ void adjust_direct_sound_buffer(u8 channel, u32 cpu_ticks)
   u32 buffer_ticks, partial_ticks;
 
   count_ticks = delta_ticks(cpu_ticks, gbc_sound_last_cpu_ticks) * SOUND_FREQUENCY;
+
 
   buffer_ticks = FP08_24_TO_U32(count_ticks);
   partial_ticks = gbc_sound_partial_ticks + FP08_24_FRACTIONAL_PART(count_ticks);
@@ -514,7 +507,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
   u32 fifo_base = ds->fifo_base;
   u32 buffer_index = ds->buffer_index;
 
-  s16 current_sample, next_sample, dest_sample;
+  s16 current_sample, next_sample;
 
   current_sample = ds->fifo[fifo_base] << 4;
 
@@ -583,7 +576,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
   UPDATE_VOLUME_CHANNEL_##type(right);                                        \
 
 #define UPDATE_TONE_SWEEP()                                                   \
-  if (gs->sweep_status != 0)                                                  \
+  if (gs->sweep_status)                                                       \
   {                                                                           \
     u32 sweep_ticks = gs->sweep_ticks - 1;                                    \
                                                                               \
@@ -591,7 +584,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
     {                                                                         \
       u32 rate = gs->rate;                                                    \
                                                                               \
-      if (gs->sweep_direction != 0)                                           \
+      if (gs->sweep_direction)                                                \
         rate = rate - (rate >> gs->sweep_shift);                              \
       else                                                                    \
         rate = rate + (rate >> gs->sweep_shift);                              \
@@ -623,14 +616,14 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
                                                                               \
     if (envelope_ticks == 0)                                                  \
     {                                                                         \
-      if (gs->envelope_direction != 0)                                        \
+      if (gs->envelope_direction)                                             \
       {                                                                       \
         if (envelope_volume != 15)                                            \
           envelope_volume++;                                                  \
       }                                                                       \
       else                                                                    \
       {                                                                       \
-        if (envelope_volume != 0)                                             \
+        if (envelope_volume)                                                  \
           envelope_volume--;                                                  \
       }                                                                       \
                                                                               \
@@ -651,7 +644,7 @@ void sound_timer(FIXED08_24 frequency_step, u8 channel)
   {                                                                           \
     tick_counter &= 0x00FFFFFF;                                               \
                                                                               \
-    if (gs->length_status != 0)                                               \
+    if (gs->length_status)                                                    \
     {                                                                         \
       u32 length_ticks = gs->length_ticks - 1;                                \
       gs->length_ticks = length_ticks;                                        \
@@ -854,7 +847,7 @@ void update_gbc_sound(u32 cpu_ticks)
 
     GBC_SOUND_UPDATE_WAVE_RAM();
 
-    if ((gs->active_flag & master_enable) != 0)
+    if (gs->active_flag & master_enable)
     {
       sample_data = wave_samples;
 
