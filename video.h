@@ -58,5 +58,9 @@ typedef struct
 void video_write_savestate(void);
 void video_read_savestate(void);
 
+#ifdef HW_RENDER_TEST
+void update_scanline_ge(void);
+void update_frame_ge(void);
+#endif
 
 #endif /* VIDEO_H */

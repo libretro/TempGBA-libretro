@@ -1,7 +1,9 @@
 TARGET      := tempgba_libretro_psp1.a
+
 CC  = psp-gcc
 AR  = psp-ar
 
+HW_RENDER_TEST = 0
 
 ifeq ($(DEBUG), 1)
 OPTIMIZE	      := -O0 -g
@@ -22,13 +24,17 @@ CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -W
 ASFLAGS = $(CFLAGS)
 
 CFLAGS  += -D__LIBRETRO__ -DPSP
-#CFLAGS  += -DHW_RENDER_TEST
 
 CFLAGS  += -D_PSP_FW_VERSION=371
 
 OBJS := mips_stub.o
 OBJS += cpu.o
 OBJS += video.o
+
+ifeq ($(HW_RENDER_TEST), 1)
+CFLAGS  += -DHW_RENDER_TEST
+OBJS += video_ge.o
+endif
 
 OBJS += griffin.o
 #OBJS += libretro.o
@@ -37,6 +43,8 @@ OBJS += griffin.o
 #OBJS += memory.o
 ##OBJS += sound.o
 #OBJS += sound_alt.o
+
+
 
 INCDIRS := -I.
 INCDIRS += -I$(shell psp-config --pspsdk-path)/include
@@ -57,8 +65,8 @@ cpu.o: cpu.c
 	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
 clean:
-#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
-	rm -f $(OBJS)
+	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge .o griffin.o
+#	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: $(TARGET) griffin.c clean

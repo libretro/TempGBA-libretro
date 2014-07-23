@@ -255,7 +255,6 @@ void retro_run()
 
    input_poll_cb();
 
-
    uint64_t start_tick, end_tick;
    sceRtcGetCurrentTick(&start_tick);
 
@@ -277,7 +276,7 @@ void retro_run()
    render_audio();
 
 
-   static unsigned int __attribute__((aligned(16))) d_list[32];
+   static unsigned int __attribute__((aligned(64))) d_list[32];
    void* const texture_vram_p = (void*)(0x04200000 - 256 * 256 * 2);
 //   sceKernelDcacheWritebackRange(texture_vram_p, GBA_SCREEN_SIZE);
 

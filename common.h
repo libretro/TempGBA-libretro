@@ -150,4 +150,8 @@ extern volatile bool save_state_loaded;
 extern const u8* gba_state_read_ptr;
 extern u8* gba_state_write_ptr;
 
+#ifdef HW_RENDER_TEST
+extern int ge_render_enable;
+#endif
+
 #endif /* COMMON_H */

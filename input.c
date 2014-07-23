@@ -20,6 +20,10 @@
 
 #include "common.h"
 
+#ifdef HW_RENDER_TEST
+int ge_render_enable = 1;
+#endif
+
 u32 enable_tilt_sensor = 0;
 u32 tilt_sensorX = 0x800;
 u32 tilt_sensorY = 0x800;
@@ -28,7 +32,6 @@ static retro_input_state_t input_state_cb;
 void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 
 static uint32_t key = 0;
-
 void update_input(void)
 {
    unsigned i;
@@ -36,6 +39,10 @@ void update_input(void)
 
    if (!input_state_cb)
       return;
+
+#ifdef HW_RENDER_TEST
+   ge_render_enable = !input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y);
+#endif
 
    for (i = 0; i < sizeof(btn_map) / sizeof(map); i++)
       new_key |= input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, btn_map[i].retropad) ? btn_map[i].gba : 0;

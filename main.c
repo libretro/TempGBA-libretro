@@ -282,7 +282,14 @@ u32 update_gba(void)
 
         if ((dispstat & 0x01) == 0)
         {
-          update_scanline();
+#ifdef HW_RENDER_TEST
+           if(ge_render_enable)
+              update_scanline_ge();
+           else
+#endif
+           {
+             update_scanline();
+           }
 
           // If in visible area also fire HDMA
           for (i = 0; i < 4; i++)
@@ -309,6 +316,11 @@ u32 update_gba(void)
         {
           // Transition from vrefresh to vblank
           dispstat |= 0x01;
+
+#ifdef HW_RENDER_TEST
+          if(ge_render_enable)
+            update_frame_ge();
+#endif
 
           update_input();
 
