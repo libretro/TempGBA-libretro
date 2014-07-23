@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <pspthreadman.h>
 #include <pspgu.h>
+#include <pspdisplay.h>
 #include "common.h"
 
 static retro_log_printf_t log_cb;
@@ -11,8 +12,6 @@ static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_environment_t environ_cb;
 
-#ifdef SINGLE_THREAD
-#else
 #include "pspthreadman.h"
 static SceUID main_thread;
 static SceUID cpu_thread;
@@ -49,8 +48,6 @@ static inline void deinit_context_switch(void)
 {
    sceKernelTerminateDeleteThread(cpu_thread);
 }
-
-#endif
 
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -155,8 +152,6 @@ void info_msg(const char *text)
 }
 
 
-#include "pspdisplay.h"
-
 bool retro_load_game(const struct retro_game_info *info)
 {
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
@@ -192,11 +187,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    reset_gba();
 
-#ifdef SINGLE_THREAD
-
-#else
    init_context_switch();
-#endif
+
    return true;
 }
 
@@ -206,9 +198,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game()
 {
-#ifndef SINGLE_THREAD
    deinit_context_switch();
-#endif
    update_backup();
 }
 
@@ -259,9 +249,6 @@ static void check_variables(void)
 
 #include<psprtc.h>
 
-//void io_update_gba(u32 cycles);
-//void resume_cpu_loop(void);
-//void lookup_pc_changed(void);
 void retro_run()
 {
    bool updated = false;
@@ -273,135 +260,7 @@ void retro_run()
    sceRtcGetCurrentTick(&start_tick);
 
 
-#ifdef SINGLE_THREAD
-   static bool firstrun = true;
-   static u32 mips_regs[32];
-   __asm__ volatile (
-   ".set      push         \n"
-   ".set      noreorder    \n"
-   " sw $s0, 0(%0)        \n"
-   " sw $s1, 4(%0)        \n"
-   " sw $s2, 8(%0)        \n"
-   " sw $s3, 12(%0)        \n"
-   " sw $s4, 16(%0)        \n"
-   " sw $s5, 20(%0)        \n"
-   " sw $s6, 24(%0)        \n"
-   " sw $s7, 28(%0)        \n"
-   " sw $a0, 32(%0)        \n"
-   " sw $a1, 36(%0)        \n"
-   " sw $a2, 40(%0)        \n"
-   " sw $a3, 44(%0)        \n"
-   " sw $gp, 48(%0)        \n"
-   " sw $sp, 52(%0)        \n"
-   " sw $fp, 56(%0)        \n"
-   " sw $ra, 60(%0)        \n"
-   ".set      pop          \n"
-   ::"r"(mips_regs)
-   );
-   if(firstrun)
-   {
-      firstrun = false;
-//   reg[CPU_HALT_STATE] = CPU_ACTIVE;
-//   reg[CHANGED_PC_STATUS] = 0;
-//   execute_arm_translate(reg[EXECUTE_CYCLES]);
-   }
-   else
-   {
-//      resume_cpu_loop();
-//      io_update_gba(reg[EXECUTE_CYCLES]);
-//      __asm__ volatile (
-//      ".set      push         \n"
-//      ".set      noreorder    \n"
-//      " j lookup_pc \n"
-//      " nop \n"
-//      ".set      pop          \n");
-
-//      __asm__ volatile (
-//      ".set      push         \n"
-//      ".set      noreorder    \n"
-//      " lw $ra, 64(%0)        \n"
-//      " addiu	$sp,$sp,-40 \n"
-//      " jr $ra \n"
-//      " nop \n"
-//      ".set      pop          \n"
-//      ::"r"(mips_regs));
-   }
-
-
-
-   __asm__ volatile (
-   ".set      push         \n"
-   ".set      noreorder    \n"
-   ".global exit_cpu_loop  \n"
-   "  exit_cpu_loop:       \n"
-   ".set      pop          \n"
-   );
-
-   __asm__ volatile (
-   ".set      push         \n"
-   ".set      noreorder    \n"
-//   ".set at \n"
-   ".equ REG_R0,              (0 * 4)  \n"
-   ".equ REG_R1,              (1 * 4)  \n"
-   ".equ REG_R2,              (2 * 4)  \n"
-   ".equ REG_R3,              (3 * 4)  \n"
-   ".equ REG_R4,              (4 * 4)  \n"
-   ".equ REG_R5,              (5 * 4)  \n"
-   ".equ REG_R6,              (6 * 4)  \n"
-   ".equ REG_R7,              (7 * 4)  \n"
-   ".equ REG_R8,              (8 * 4)  \n"
-   ".equ REG_R9,              (9 * 4)  \n"
-   ".equ REG_R10,             (10 * 4)  \n"
-   ".equ REG_R11,             (11 * 4)  \n"
-   ".equ REG_R12,             (12 * 4)  \n"
-   ".equ REG_R13,             (13 * 4)  \n"
-   ".equ REG_R14,             (14 * 4)  \n"
-   "sw $3,  REG_R0(%0)  \n"
-   "sw $7,  REG_R1(%0)  \n"
-   "sw $8,  REG_R2(%0)  \n"
-   "sw $9,  REG_R3(%0)  \n"
-   "sw $10, REG_R4(%0)  \n"
-   "sw $11, REG_R5(%0)  \n"
-   "sw $12, REG_R6(%0)  \n"
-   "sw $13, REG_R7(%0)  \n"
-   "sw $14, REG_R8(%0)  \n"
-   "sw $15, REG_R9(%0)  \n"
-   "sw $24, REG_R11(%0)  \n"
-   "sw $25, REG_R12(%0)  \n"
-
-   "sw $18, REG_R10(%0)  \n"
-   "sw $28, REG_R13(%0)  \n"
-   "sw $30, REG_R14(%0)  \n"
-   ".set      pop          \n"
-   ::"r"(reg));
-
-   __asm__ volatile (
-   ".set      push         \n"
-   ".set      noreorder    \n"
-//   "  addiu $sp, 0x2c        \n"
-   " sw $ra, 64(%0)        \n"
-   " lw $s0, 0(%0)        \n"
-   " lw $s1, 4(%0)        \n"
-   " lw $s2, 8(%0)        \n"
-   " lw $s3, 12(%0)        \n"
-   " lw $s4, 16(%0)        \n"
-   " lw $s5, 20(%0)        \n"
-   " lw $s6, 24(%0)        \n"
-   " lw $s7, 28(%0)        \n"
-   " lw $a0, 32(%0)        \n"
-   " lw $a1, 36(%0)        \n"
-   " lw $a2, 40(%0)        \n"
-   " lw $a3, 44(%0)        \n"
-   " lw $gp, 48(%0)        \n"
-   " lw $sp, 52(%0)        \n"
-   " lw $fp, 56(%0)        \n"
-   " lw $ra, 60(%0)        \n"
-   ".set      pop          \n"
-   ::"r"(mips_regs)
-   );
-#else
    switch_to_cpu_thread();
-#endif
 
 
    sceRtcGetCurrentTick(&end_tick);
@@ -419,9 +278,7 @@ void retro_run()
 
 
    static unsigned int __attribute__((aligned(16))) d_list[32];
-//   void* const texture_vram_p = (void*) (0x44200000 - (256 * 256)); // max VRAM address - frame size
-
-   void* const texture_vram_p = (u16 *)(0x04200000 - 256 * 256 * 2);
+   void* const texture_vram_p = (void*)(0x04200000 - 256 * 256 * 2);
 //   sceKernelDcacheWritebackRange(texture_vram_p, GBA_SCREEN_SIZE);
 
    sceGuStart(GU_DIRECT, d_list);

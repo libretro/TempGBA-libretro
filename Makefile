@@ -22,7 +22,7 @@ CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -W
 ASFLAGS = $(CFLAGS)
 
 CFLAGS  += -D__LIBRETRO__ -DPSP
-#CFLAGS  += -DSINGLE_THREAD
+#CFLAGS  += -DHW_RENDER_TEST
 
 CFLAGS  += -D_PSP_FW_VERSION=371
 
@@ -57,8 +57,8 @@ cpu.o: cpu.c
 	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
 clean:
-	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
-#	rm -f $(OBJS)
+#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o griffin.o
+	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: $(TARGET) griffin.c clean

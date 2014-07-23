@@ -20,8 +20,6 @@
 
 #include "common.h"
 
-
-#define SOUND_BUFFER_SIZE (SOUND_SAMPLES * 2)
 #define RING_BUFFER_SIZE  (65536)
 
 u32 gbc_sound_update = 0;
