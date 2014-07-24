@@ -17,9 +17,6 @@
 #define GBA_FRAME_TEXTURE     (void*)(0x04200000 - 256 * 256 * 2)
 #define GBA_FRAME_TEXTURE_GU  FROM_GU_POINTER(GBA_FRAME_TEXTURE)
 
-static unsigned int __attribute__((aligned(64))) d_list[2*1024];
-static PspGeContext main_context_buffer;
-
 typedef struct
 {
    unsigned bg_mode                      : 3;

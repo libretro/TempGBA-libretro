@@ -1,5 +1,8 @@
 #include "video_ge.h"
 
+static unsigned int __attribute__((aligned(64))) d_list[2*1024];
+static PspGeContext main_context_buffer;
+
 void update_scanline_ge(void)
 {
 
