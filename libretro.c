@@ -154,11 +154,11 @@ void info_msg(const char *text)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_0RGB1555;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (log_cb)
-         log_cb(RETRO_LOG_INFO, "[TempGBA]: RGB565 is not supported.\n");
+         log_cb(RETRO_LOG_INFO, "[TempGBA]: 0RGB1555 is not supported.\n");
       return false;
    }
 
@@ -289,7 +289,7 @@ void retro_run()
 
    sceGuFinish();
 
-   video_cb(texture_vram_p,GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
+   video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
        check_variables();
