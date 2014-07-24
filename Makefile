@@ -3,7 +3,7 @@ TARGET      := tempgba_libretro_psp1.a
 CC  = psp-gcc
 AR  = psp-ar
 
-HW_RENDER_TEST = 1
+HW_RENDER_TEST = 0
 
 ifeq ($(DEBUG), 1)
 OPTIMIZE	      := -O0 -g
@@ -65,8 +65,8 @@ cpu.o: cpu.c
 	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
 clean:
-	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o
-#	rm -f $(OBJS)
+#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o
+	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: $(TARGET) griffin.c clean
