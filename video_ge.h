@@ -90,7 +90,7 @@ typedef struct
 {
    unsigned value_times_256                   : 15;
    unsigned sign                              : 1;
-} __attribute__((packed)) REG_BGxROTSCLP_t;
+} __attribute__((packed)) ROTSCLP_t;
 
 typedef struct
 {
@@ -157,17 +157,17 @@ static struct
    REG_BGxOFS_t BG2_scroll;
    REG_BGxOFS_t BG3_scroll;
 //0x4000020
-   REG_BGxROTSCLP_t BG2_dx;
-   REG_BGxROTSCLP_t BG2_dmx;
-   REG_BGxROTSCLP_t BG2_dy;
-   REG_BGxROTSCLP_t BG2_dmy;
+   ROTSCLP_t BG2_dx;
+   ROTSCLP_t BG2_dmx;
+   ROTSCLP_t BG2_dy;
+   ROTSCLP_t BG2_dmy;
    REG_BGxROTSCLREF_t BG2_rotscl_ref_X;
    REG_BGxROTSCLREF_t BG2_rotscl_ref_Y;
 //0x4000030
-   REG_BGxROTSCLP_t BG3_dx;
-   REG_BGxROTSCLP_t BG3_dmx;
-   REG_BGxROTSCLP_t BG3_dy;
-   REG_BGxROTSCLP_t BG3_dmy;
+   ROTSCLP_t BG3_dx;
+   ROTSCLP_t BG3_dmx;
+   ROTSCLP_t BG3_dy;
+   ROTSCLP_t BG3_dmy;
    REG_BGxROTSCLREF_t BG3_rotscl_ref_X;
    REG_BGxROTSCLREF_t BG3_rotscl_ref_Y;
 //0x4000040
@@ -191,5 +191,89 @@ static struct
    REG_BLDALPHA_t blend_alpha;
    REG_BLDY_t blend_luma;
 } *const gba_video_registers = (void *const)io_registers;
+
+//BG MAP
+typedef struct
+{
+   unsigned tile_number          :10;
+   unsigned flip_X               :1;
+   unsigned flip_Y               :1;
+   unsigned palette_id           :4;
+}__attribute__((packed)) BGMAP_TEXT_t;
+
+typedef struct
+{
+   uint8_t tile_number;
+}__attribute__((packed)) BGMAP_ROTSCL_t;
+
+//OAM
+typedef struct
+{
+   union
+   {
+      struct
+      {
+         uint8_t Y;
+         unsigned rotscl_flag          :1;
+         unsigned doublesize_flag      :1;
+         unsigned mode                 :2;
+         unsigned mosaic               :1;
+         unsigned palette_mode_256     :1;
+         unsigned shape                :2;
+      }__attribute__((packed));
+      struct
+      {
+         unsigned _dummy_y             :9;
+         unsigned obj_disable_flag     :1;
+      }__attribute__((packed));
+   };
+
+   union
+   {
+      struct
+      {
+         unsigned X                    :9;
+         unsigned rotscl_param_id      :5;
+         unsigned size                 :2;
+      }__attribute__((packed));
+      struct
+      {
+         unsigned _dummy_x             :12;
+         unsigned flip_X               :1;
+         unsigned flip_Y               :1;
+      }__attribute__((packed));
+   }__attribute__((packed)) OAM2_t;
+
+   struct
+   {
+      unsigned id                   :10;
+      unsigned prio                 :2;
+      unsigned palette_id           :4;
+   }__attribute__((packed)) OAM3_t;
+
+   uint16_t _dummy;
+}__attribute__((packed)) OAM_t;
+
+typedef struct
+{
+   uint32_t _dummy_dx1;
+   uint16_t _dummy_dx2;
+   ROTSCLP_t dx;
+
+   uint32_t _dummy_dmx1;
+   uint16_t _dummy_dmx2;
+   ROTSCLP_t dmx;
+
+   uint32_t _dummy_dy1;
+   uint16_t _dummy_dy2;
+   ROTSCLP_t dy;
+
+   uint32_t _dummy_dmy1;
+   uint16_t _dummy_dmy2;
+   ROTSCLP_t dmy;
+}__attribute__((packed)) OAM_ROTSCLP_t;
+
+static OAM_t* const oam_attributes = (void *const)oam_ram;
+
 
 #endif // VIDEO_GE_H
