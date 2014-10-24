@@ -322,7 +322,7 @@ u32 update_gba(void)
             update_frame_ge();
 #endif
 
-          update_input();
+//          update_input();
 
           switch_to_main_thread();
 

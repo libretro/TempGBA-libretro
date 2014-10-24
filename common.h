@@ -40,7 +40,8 @@
 #define MAX_FILE (256)
 
 #define ALIGN_PSPDATA __attribute__((aligned(16)))
-#define ALIGN_DATA    __attribute__((aligned(4)))
+#define ALIGN_DATA    __attribute__((aligned(64)))
+
 #define MEM_ALIGN     (4)
 
 #define ROR(dest, value, shift)                                               \
@@ -150,8 +151,29 @@ extern volatile bool save_state_loaded;
 extern const u8* gba_state_read_ptr;
 extern u8* gba_state_write_ptr;
 
+#include "video_ge.h"
 #ifdef HW_RENDER_TEST
 extern int ge_render_enable;
+#endif
+
+#ifdef PERF_TEST
+
+extern struct retro_perf_callback perf_cb;
+
+#define RETRO_PERFORMANCE_INIT(X) \
+   static struct retro_perf_counter X = {#X}; \
+   do { \
+      if (!(X).registered) \
+         perf_cb.perf_register(&(X)); \
+   } while(0)
+
+#define RETRO_PERFORMANCE_START(X) perf_cb.perf_start(&(X))
+#define RETRO_PERFORMANCE_STOP(X) perf_cb.perf_stop(&(X))
+#else
+#define RETRO_PERFORMANCE_INIT(X)
+#define RETRO_PERFORMANCE_START(X)
+#define RETRO_PERFORMANCE_STOP(X)
+
 #endif
 
 #endif /* COMMON_H */

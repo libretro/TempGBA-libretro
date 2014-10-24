@@ -4,6 +4,7 @@ CC  = psp-gcc
 AR  = psp-ar
 
 HW_RENDER_TEST = 0
+PERF_TEST      = 0
 
 ifeq ($(DEBUG), 1)
 OPTIMIZE	      := -O0 -g
@@ -18,7 +19,7 @@ CFLAGS   += -G0
 CFLAGS   += -march=allegrex -mfp32 -mgp32 -mlong32 -mabi=eabi
 CFLAGS   += -fomit-frame-pointer -fstrict-aliasing
 CFLAGS   += -falign-functions=32 -falign-loops -falign-labels -falign-jumps
-CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wmissing-prototypes -Wsign-compare
+CFLAGS   += -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wsign-compare
 #CFLAGS   += -Werror
 
 ASFLAGS = $(CFLAGS)
@@ -36,13 +37,17 @@ CFLAGS  += -DHW_RENDER_TEST
 OBJS += video_ge.o
 endif
 
-OBJS += griffin.o
-#OBJS += libretro.o
-#OBJS += input.o
-#OBJS += main.o
-#OBJS += memory.o
+ifeq ($(PERF_TEST), 1)
+CFLAGS  += -DPERF_TEST
+endif
+
+#OBJS += griffin.o
+OBJS += libretro.o
+OBJS += input.o
+OBJS += main.o
+OBJS += memory.o
 ##OBJS += sound.o
-#OBJS += sound_alt.o
+OBJS += sound_alt.o
 
 
 
@@ -64,9 +69,11 @@ cpu.o: cpu.c
 %.o: %.S
 	$(CC) -c -o $@ $< $(ASFLAGS) $(OPTIMIZE)
 
+video_ge.o: video_ge_utils.h
+
 clean:
-#	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o
-	rm -f $(OBJS)
+	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o
+#	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: $(TARGET) griffin.c clean

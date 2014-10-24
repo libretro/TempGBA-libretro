@@ -34,6 +34,7 @@ void retro_set_input_state(retro_input_state_t cb) { input_state_cb = cb; }
 static uint32_t key = 0;
 void update_input(void)
 {
+//   return;
    unsigned i;
    uint32_t new_key = 0;
 
@@ -42,6 +43,16 @@ void update_input(void)
 
 #ifdef HW_RENDER_TEST
    ge_render_enable = !input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y);
+   show_4bit_tilemap = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X);
+   static int old_R_state = 0;
+   int R_state = input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R);
+   if ((R_state != old_R_state) && !R_state)
+   {
+      tilemap_offset = (tilemap_offset + 1) % 3;
+      gba_generic_counter++;
+   }
+   old_R_state = R_state;
+
 #endif
 
    for (i = 0; i < sizeof(btn_map) / sizeof(map); i++)

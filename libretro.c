@@ -12,6 +12,8 @@ static retro_video_refresh_t video_cb;
 static retro_input_poll_t input_poll_cb;
 static retro_environment_t environ_cb;
 
+struct retro_perf_callback perf_cb;
+
 #include "pspthreadman.h"
 static SceUID main_thread;
 static SceUID cpu_thread;
@@ -54,7 +56,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name = "TempGBA";
    info->library_version = "v0.0.1";
    info->need_fullpath = true;
-   info->block_extract = true;
+   info->block_extract = false;
    info->valid_extensions = "zip|gba|bin|agb|gbz" ;
 }
 
@@ -76,10 +78,14 @@ void retro_init()
 {
    init_gamepak_buffer();
    init_sound();
+#ifdef HW_RENDER_TEST
+   init_video_ge();
+#endif
 }
 
 void retro_deinit()
 {
+   perf_cb.perf_log();
    quit_gba();
 }
 
@@ -93,6 +99,9 @@ void retro_set_environment(retro_environment_t cb)
       log_cb = log.log;
    else
       log_cb = NULL;
+
+   environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
+
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -154,7 +163,8 @@ void info_msg(const char *text)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_0RGB1555;
+//   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_0RGB1555;
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (log_cb)
@@ -261,6 +271,8 @@ void retro_run()
 
    switch_to_cpu_thread();
 
+   update_input();
+
 
    sceRtcGetCurrentTick(&end_tick);
 //   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
@@ -277,19 +289,50 @@ void retro_run()
 
 
    static unsigned int __attribute__((aligned(64))) d_list[32];
-   void* const texture_vram_p = (void*)(0x04200000 - 256 * 256 * 2);
-//   sceKernelDcacheWritebackRange(texture_vram_p, GBA_SCREEN_SIZE);
+   void* const texture_vram_p = GBA_FRAME_TEXTURE;
 
    sceGuStart(GU_DIRECT, d_list);
 
-   sceGuTexImage(0, 256, 256, GBA_LINE_SIZE, texture_vram_p);
-   sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
-   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
-   sceGuDisable(GU_BLEND);
+#ifdef HW_RENDER_TEST
+   if(ge_render_enable)
+      sceGuTexImage(0, GBA_LINE_SIZE, 256, GBA_LINE_SIZE, texture_vram_p);
+   else
+#endif
+      sceGuTexImage(0, 256, 256, 256, texture_vram_p);
+
+#ifdef HW_RENDER_TEST
+   if(ge_render_enable)
+   {
+//      sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
+      sceGuTexMode(GU_PSM_8888, 0, 0, GU_FALSE);
+      sceGuEnable(GU_TEXTURE_2D);
+      sceGuTexFunc(GU_TFX_REPLACE,GU_TCC_RGB);
+      sceGuDisable(GU_BLEND);
+
+
+//      sceGuTexMode(GU_PSM_T16, 0, 0, GU_FALSE);
+//      sceGuEnable(GU_TEXTURE_2D);
+//      sceGuTexFunc(GU_TFX_REPLACE,GU_TCC_RGBA);
+//      sceGuClutMode(GU_PSM_5551,0,0xFF,0);
+//      sceGuClutLoad(32, palette_ram+256);
+   }
+   else
+#endif
+   {
+      sceGuTexMode(GU_PSM_5551, 0, 0, GU_FALSE);
+      sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+      sceGuDisable(GU_BLEND);
+   }
 
    sceGuFinish();
 
-   video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
+//   sceDisplaySetFrameBuf(GBA_FRAME_TEXTURE,256,PSP_DISPLAY_PIXEL_FORMAT_565,PSP_DISPLAY_SETBUF_NEXTFRAME);
+#ifdef HW_RENDER_TEST
+   if(ge_render_enable)
+      video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
+   else
+#endif
+      video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
        check_variables();

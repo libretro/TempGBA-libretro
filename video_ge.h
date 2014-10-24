@@ -11,11 +11,29 @@
 #include <pspdisplay.h>
 #include <stddef.h>
 
-#define FROM_GU_POINTER(ptr)  ((void *)((uint32_t)(ptr)|0x44000000))
-#define TO_GU_POINTER(ptr)    ((void *)((uint32_t)(ptr)&~0x44000000))
+#define TO_UNCACHED_PTR(ptr)     ((void *)((u32)(ptr)|0x40000000))
+#define TO_CACHED_PTR(ptr)       ((void *)((u32)(ptr)&~0x40000000))
 
-#define GBA_FRAME_TEXTURE     (void*)(0x04200000 - 256 * 256 * 2)
-#define GBA_FRAME_TEXTURE_GU  FROM_GU_POINTER(GBA_FRAME_TEXTURE)
+#define FROM_GU_POINTER(ptr)     ((void *)((u32)(ptr)|0x44000000))
+#define TO_GU_POINTER(ptr)       ((void *)((u32)(ptr)&~0x44000000))
+
+
+
+#define PSP_VRAM_MAX             ((u16*)0x44200000)
+#define GBA_VRAMTEXTURE_4bit     (PSP_VRAM_MAX           - (256 * 256) * 3)
+#define GBA_VRAMTEXTURE_8bit     (GBA_VRAMTEXTURE_4bit   - (128 * 256) * 3)
+#define GBA_DEPTH_BUFFER         (GBA_VRAMTEXTURE_8bit   - GBA_LINE_SIZE * GBA_SCREEN_HEIGHT)
+#define GBA_FRAME_TEXTURE        (GBA_DEPTH_BUFFER       - GBA_LINE_SIZE * GBA_SCREEN_HEIGHT * 2)
+
+#define GBA_VRAM_PALETTE_BUFFER  (GBA_FRAME_TEXTURE - 256 * 3)
+#define GBA_VRAM_VBUFFER0         ((psp1_sprite_uv16bit_t*)GBA_VRAM_PALETTE_BUFFER - 32)
+#define GBA_VRAM_VBUFFER1         ((psp1_sprite_t*)GBA_VRAM_VBUFFER0       - 32*32*4 - 4)
+
+
+#define GBA_VRAMTEXTURE_8bit_GU  TO_GU_POINTER(GBA_VRAMTEXTURE_8bit)
+#define GBA_VRAMTEXTURE_4bit_GU  TO_GU_POINTER(GBA_VRAMTEXTURE_4bit)
+#define GBA_FRAME_TEXTURE_GU     TO_GU_POINTER(GBA_FRAME_TEXTURE)
+
 
 typedef struct
 {
@@ -38,7 +56,7 @@ typedef struct
 typedef struct
 {
    unsigned swap_on                      : 1;
-   unsigned _dummy                       : 15;
+   unsigned                              : 15;
 } __attribute__((packed)) REG_GREENSWAP_t;
 
 typedef struct
@@ -56,14 +74,14 @@ typedef struct
 typedef struct
 {
    uint8_t LY;
-   uint8_t _dummy;
+   unsigned :8;
 } __attribute__((packed)) REG_VCOUNT_t;
 
 typedef struct
 {
    unsigned priority                     : 2;
    unsigned character_base_block         : 2;
-   unsigned _dummy                       : 2;
+   unsigned                              : 2;
    unsigned mosaic                       : 1;
    unsigned palette_mode_256             : 1;
 
@@ -75,9 +93,9 @@ typedef struct
 typedef struct
 {
    unsigned X                       : 9;
-   unsigned _x_dummy                : 7;
+   unsigned                         : 7;
    unsigned Y                       : 9;
-   unsigned _y_dummy                : 7;
+   unsigned                         : 7;
 } __attribute__((packed)) REG_BGxOFS_t;
 
 typedef struct
@@ -129,15 +147,15 @@ typedef struct
 typedef struct
 {
    unsigned src_coeff             : 5;
-   unsigned _src_dummy            : 3;
+   unsigned                       : 3;
    unsigned dst_coeff             : 5;
-   unsigned _dst_dummy            : 3;
+   unsigned                       : 3;
 } __attribute__((packed)) REG_BLDALPHA_t;
 
 typedef struct
 {
    unsigned coeff                  : 5;
-   unsigned _dummy                 : 27;
+   unsigned                        : 27;
 } __attribute__((packed)) REG_BLDY_t;
 
 static struct
@@ -185,7 +203,7 @@ static struct
    REG_WINCNT_t WIN_OBJ_control;
    REG_MOSAIC_t BG_mosaic;
    REG_MOSAIC_t OBJ_mosaic;
-   uint16_t _dummy;
+   unsigned :16;
 //0x4000050
    REG_BLDCNT_t blend_control;
    REG_BLDALPHA_t blend_alpha;
@@ -196,8 +214,9 @@ static struct
 typedef struct
 {
    unsigned tile_number          :10;
-   unsigned flip_X               :1;
-   unsigned flip_Y               :1;
+//   unsigned flip_X               :1;
+//   unsigned flip_Y               :1;
+   unsigned flip_XY              :2;
    unsigned palette_id           :4;
 }__attribute__((packed)) BGMAP_TEXT_t;
 
@@ -223,7 +242,7 @@ typedef struct
       }__attribute__((packed));
       struct
       {
-         unsigned _dummy_y             :9;
+         unsigned                      :9;
          unsigned obj_disable_flag     :1;
       }__attribute__((packed));
    };
@@ -238,42 +257,44 @@ typedef struct
       }__attribute__((packed));
       struct
       {
-         unsigned _dummy_x             :12;
-         unsigned flip_X               :1;
-         unsigned flip_Y               :1;
+         unsigned                      :12;
+         unsigned flip_XY              :2;
       }__attribute__((packed));
-   }__attribute__((packed)) OAM2_t;
+   }__attribute__((packed));
 
    struct
    {
       unsigned id                   :10;
       unsigned prio                 :2;
       unsigned palette_id           :4;
-   }__attribute__((packed)) OAM3_t;
+   }__attribute__((packed));
 
-   uint16_t _dummy;
+   unsigned                         :16;
 }__attribute__((packed)) OAM_t;
 
 typedef struct
 {
-   uint32_t _dummy_dx1;
-   uint16_t _dummy_dx2;
+   unsigned :32;
+   unsigned :16;
    ROTSCLP_t dx;
 
-   uint32_t _dummy_dmx1;
-   uint16_t _dummy_dmx2;
+   unsigned :32;
+   unsigned :16;
    ROTSCLP_t dmx;
 
-   uint32_t _dummy_dy1;
-   uint16_t _dummy_dy2;
+   unsigned :32;
+   unsigned :16;
    ROTSCLP_t dy;
 
-   uint32_t _dummy_dmy1;
-   uint16_t _dummy_dmy2;
+   unsigned :32;
+   unsigned :16;
    ROTSCLP_t dmy;
 }__attribute__((packed)) OAM_ROTSCLP_t;
 
 static OAM_t* const oam_attributes = (void *const)oam_ram;
 
+extern int show_4bit_tilemap;
+extern int tilemap_offset;
+extern int gba_generic_counter;
 
 #endif // VIDEO_GE_H

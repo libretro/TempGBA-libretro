@@ -24,8 +24,9 @@
 
 #define GBA_SCREEN_WIDTH  (240)
 #define GBA_SCREEN_HEIGHT (160)
+//#define GBA_SCREEN_WIDTH  (256)
+//#define GBA_SCREEN_HEIGHT (256)
 #define GBA_LINE_SIZE     (256)
-#define GBA_SCREEN_SIZE   (GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT * 2)
 
 void update_scanline(void);
 
@@ -59,6 +60,7 @@ void video_write_savestate(void);
 void video_read_savestate(void);
 
 #ifdef HW_RENDER_TEST
+void init_video_ge(void);
 void update_scanline_ge(void);
 void update_frame_ge(void);
 #endif

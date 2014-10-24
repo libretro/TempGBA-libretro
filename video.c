@@ -34,7 +34,7 @@ s32 ALIGN_DATA affine_reference_x[2];
 s32 ALIGN_DATA affine_reference_y[2];
 
 
-static u16 *screen_texture = (u16 *)(0x04200000 - 256 * 256 * 2);
+static u16 *screen_texture = (u16 *)(GBA_FRAME_TEXTURE);
 
 typedef struct
 {
