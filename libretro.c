@@ -160,10 +160,24 @@ void info_msg(const char *text)
       log_cb(RETRO_LOG_INFO, text);
 }
 
+static void extract_directory(char *buf, const char *path, size_t size)
+{
+   strncpy(buf, path, size - 1);
+   buf[size - 1] = '\0';
+
+   char *base = strrchr(buf, '/');
+
+   if (base)
+      *base = '\0';
+   else
+      strncpy(buf, ".", size);
+}
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-//   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_0RGB1555;
+   char filename_bios[MAX_PATH];
+   const char *dir = NULL;
+
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
@@ -172,14 +186,21 @@ bool retro_load_game(const struct retro_game_info *info)
       return false;
    }
 
-   // Copy the directory path of the executable into main_path
-   getcwd(main_path, MAX_PATH);
-   strcat(main_path, "/");
-   strcpy(dir_save, main_path);
+   extract_directory(main_path,info->path,sizeof(main_path));
 
-   char filename_bios[MAX_FILE];
+   if (environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &dir) && dir)
+      strncpy(filename_bios, dir, sizeof(filename_bios));
+   else
+      strncpy(filename_bios, main_path, sizeof(filename_bios));
 
-   sprintf(filename_bios, "%sgba_bios.bin", main_path);
+   strncat(filename_bios, "/gba_bios.bin",sizeof(filename_bios));
+
+   strncat(main_path, "/",sizeof(main_path));
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &dir) && dir)
+      strncpy(dir_save, dir, sizeof(dir_save));
+   else
+      strncpy(dir_save, main_path, sizeof(dir_save));
 
    if (load_bios(filename_bios) < 0)
    {
