@@ -195,12 +195,15 @@ bool retro_load_game(const struct retro_game_info *info)
 
    strncat(filename_bios, "/gba_bios.bin",sizeof(filename_bios));
 
-   strncat(main_path, "/",sizeof(main_path));
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &dir) && dir)
       strncpy(dir_save, dir, sizeof(dir_save));
    else
       strncpy(dir_save, main_path, sizeof(dir_save));
+
+   strncat(dir_save, "/",sizeof(dir_save));
+
+   strncat(main_path, "/",sizeof(main_path));
 
    if (load_bios(filename_bios) < 0)
    {
