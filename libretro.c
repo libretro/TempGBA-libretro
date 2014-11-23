@@ -54,10 +54,10 @@ static inline void deinit_context_switch(void)
 void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name = "TempGBA";
-   info->library_version = "v0.0.1";
+   info->library_version = "26731013";
    info->need_fullpath = true;
    info->block_extract = false;
-   info->valid_extensions = "zip|gba|bin|agb|gbz" ;
+   info->valid_extensions = "gba|bin|agb|gbz" ;
 }
 
 
