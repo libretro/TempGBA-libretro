@@ -74,7 +74,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 }
 
 
-void retro_init()
+void retro_init(void)
 {
    init_gamepak_buffer();
    init_sound();
@@ -83,7 +83,7 @@ void retro_init()
 #endif
 }
 
-void retro_deinit()
+void retro_deinit(void)
 {
    perf_cb.perf_log();
    quit_gba();
@@ -109,7 +109,7 @@ void retro_set_input_poll(retro_input_poll_t cb) { input_poll_cb = cb; }
 
 void retro_set_controller_port_device(unsigned port, unsigned device) {}
 
-void retro_reset()
+void retro_reset(void)
 {
    deinit_context_switch();
 
@@ -120,7 +120,7 @@ void retro_reset()
 }
 
 
-size_t retro_serialize_size()
+size_t retro_serialize_size(void)
 {
    return SAVESTATE_SIZE;
 }
@@ -145,7 +145,7 @@ bool retro_unserialize(const void *data, size_t size)
    return true;
 }
 
-void retro_cheat_reset() {}
+void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
 void error_msg(const char *text)
@@ -177,6 +177,23 @@ bool retro_load_game(const struct retro_game_info *info)
 {
    char filename_bios[MAX_PATH];
    const char *dir = NULL;
+
+   struct retro_input_descriptor desc[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "D-Pad Up" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "D-Pad Down" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "D-Pad Right" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,     "B" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,     "A" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "L" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "R" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Select" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START, "Start" },
+
+      { 0 },
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -228,15 +245,20 @@ bool retro_load_game(const struct retro_game_info *info)
 
 
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
-{ return false; }
+{
+   return false;
+}
 
-void retro_unload_game()
+void retro_unload_game(void)
 {
    deinit_context_switch();
    update_backup();
 }
 
-unsigned retro_get_region() { return RETRO_REGION_NTSC; }
+unsigned retro_get_region(void)
+{
+   return RETRO_REGION_NTSC;
+}
 
 void *retro_get_memory_data(unsigned id)
 {
@@ -283,7 +305,7 @@ static void check_variables(void)
 
 #include<psprtc.h>
 
-void retro_run()
+void retro_run(void)
 {
    bool updated = false;
 
@@ -363,4 +385,7 @@ void retro_run()
 
 }
 
-unsigned retro_api_version() { return RETRO_API_VERSION; }
+unsigned retro_api_version(void)
+{
+   return RETRO_API_VERSION;
+}
