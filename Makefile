@@ -48,6 +48,7 @@ OBJS += main.o
 OBJS += memory.o
 ##OBJS += sound.o
 OBJS += sound_alt.o
+OBJS += zip.o
 
 
 
@@ -72,7 +73,7 @@ cpu.o: cpu.c
 video_ge.o: video_ge_utils.h
 
 clean:
-	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o
+	rm -f libretro.o input.o main.o memory.o sound.o sound_alt.o video_ge.o griffin.o zip.o
 #	rm -f $(OBJS)
 	rm -f $(TARGET)
 

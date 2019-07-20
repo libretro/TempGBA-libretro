@@ -145,6 +145,7 @@ typedef u32 FIXED08_24;
 #include "input.h"
 #include "sound.h"
 #include "main.h"
+#include "zip.h"
 
 void switch_to_main_thread(void);
 extern volatile bool save_state_loaded;

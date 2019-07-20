@@ -3224,12 +3224,23 @@ static s32 load_gamepak_raw(const char *name)
 
 s32 load_gamepak(const char *name)
 {
+  char *dot_position = strrchr(name, '.');
+
   s32 file_size = -1;
   gamepak_file_large = -1;
 
   info_msg("Now Loading...");
 
-  file_size = load_gamepak_raw(name);
+  if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
+  {
+    file_size = load_file_zip(name);
+  }
+  else
+
+  if (!strcasecmp(dot_position, ".gba") || !strcasecmp(dot_position, ".agb") || !strcasecmp(dot_position, ".bin"))
+  {
+    file_size = load_gamepak_raw(name);
+  }
 
   if (file_size > 0)
   {
