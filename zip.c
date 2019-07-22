@@ -44,8 +44,6 @@ struct SZIPFileHeader
   s16 ExtraFieldLength;
 }  __attribute__((packed));
 
-void draw_progress(u32 output_size, u32 total_size);
-
 
 s32 load_file_zip(const char *filename)
 {
@@ -139,8 +137,6 @@ s32 load_file_zip(const char *filename)
 
               FILE_READ(fd, cbuffer, ZIP_BUFFER_SIZE);
             }
-
-            draw_progress((u32)stream.total_out, (u32)retval);
           }
 
           err = Z_OK;
@@ -158,9 +154,3 @@ outcode:
 
   return retval;
 }
-
-void draw_progress(u32 output_size, u32 total_size)
-{
-   //TODO
-}
-
