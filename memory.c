@@ -255,14 +255,14 @@ char gamepak_filename_raw[MAX_FILE];
 
 static void init_memory_gamepak(void);
 
-static s32 load_gamepak_raw(const char *name);
+static s32 load_gamepak_raw(const char *filename);
 static u32 evict_gamepak_page(void);
 
 // char backup_id[16];
 static void get_backup_id(void);
 
 char backup_filename[MAX_FILE];
-//static u32 save_backup(char *name);
+//static u32 save_backup(char *filename);
 
 static u32 encode_bcd(u8 value);
 
@@ -2918,14 +2918,14 @@ static void get_backup_id(void)
   }
 }
 
-s32 load_backup(char *name)
+s32 load_backup(char *filename)
 {
   SceUID backup_file;
   char backup_path[MAX_PATH];
 
   memset(gamepak_backup, 0xFF, 1024 * 128);
 
-  sprintf(backup_path, "%s%s", dir_save, name);
+  sprintf(backup_path, "%s%s", dir_save, filename);
 
   FILE_OPEN(backup_file, backup_path, READ);
 
@@ -2990,7 +2990,7 @@ s32 load_backup(char *name)
   return -1;
 }
 
-static u32 save_backup(char *name)
+static u32 save_backup(char *filename)
 {
   SceUID backup_file;
   char backup_path[MAX_PATH];
@@ -2999,7 +2999,7 @@ static u32 save_backup(char *name)
 
   if (backup_type != BACKUP_NONE)
   {
-    sprintf(backup_path, "%s%s", dir_save, name);
+    sprintf(backup_path, "%s%s", dir_save, filename);
 
     FILE_OPEN(backup_file, backup_path, WRITE);
 
@@ -3179,15 +3179,15 @@ static s32 load_game_config(char *gamepak_title, char *gamepak_code, char *gamep
 }
 
 
-static s32 load_gamepak_raw(const char *name)
+static s32 load_gamepak_raw(const char *filename)
 {
   SceUID gamepak_file;
 
-  FILE_OPEN(gamepak_file, name, READ);
+  FILE_OPEN(gamepak_file, filename, READ);
 
   if (FILE_CHECK_VALID(gamepak_file))
   {
-    u32 _gamepak_size = file_length(name);
+    u32 _gamepak_size = file_length(filename);
 
     // If it's a big file size keep it don't close it, we'll
     // probably want to load it later
@@ -3203,16 +3203,16 @@ static s32 load_gamepak_raw(const char *name)
 
       gamepak_file_large = gamepak_file;
 
-      if (strrchr(name, '/') != NULL)
+      if (strrchr(filename, '/') != NULL)
       {
-        strcpy(gamepak_filename_raw, name);
+        strcpy(gamepak_filename_raw, filename);
       }
       else
       {
         char current_dir[MAX_PATH];
 
         getcwd(current_dir, MAX_PATH);
-        sprintf(gamepak_filename_raw, "%s/%s", current_dir, name);
+        sprintf(gamepak_filename_raw, "%s/%s", current_dir, filename);
       }
     }
 
@@ -3222,9 +3222,9 @@ static s32 load_gamepak_raw(const char *name)
   return -1;
 }
 
-s32 load_gamepak(const char *name)
+s32 load_gamepak(const char *filename)
 {
-  char *dot_position = strrchr(name, '.');
+  char *dot_position = strrchr(filename, '.');
 
   s32 file_size = -1;
   gamepak_file_large = -1;
@@ -3233,13 +3233,13 @@ s32 load_gamepak(const char *name)
 
   if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
   {
-    file_size = load_file_zip(name);
+    file_size = load_file_zip(filename);
   }
   else
 
   if (!strcasecmp(dot_position, ".gba") || !strcasecmp(dot_position, ".agb") || !strcasecmp(dot_position, ".bin"))
   {
-    file_size = load_gamepak_raw(name);
+    file_size = load_gamepak_raw(filename);
   }
 
   if (file_size > 0)
@@ -3247,11 +3247,11 @@ s32 load_gamepak(const char *name)
     info_msg("Searching BACKUP ID");
     gamepak_size = (file_size + 0x7FFF) & ~0x7FFF;
 
-    char *p = strrchr(name, '/');
+    char *p = strrchr(filename, '/');
     if (p != NULL)
-      name = p + 1;
+      filename = p + 1;
 
-    sprintf(gamepak_filename, "%s", name);
+    sprintf(gamepak_filename, "%s", filename);
 
     char game_title[13];
     char game_code[5];
@@ -3280,11 +3280,11 @@ void update_backup(void)
       save_backup(backup_filename);
 }
 
-s32 load_bios(char *name)
+s32 load_bios(char *filename)
 {
   SceUID bios_file;
 
-  FILE_OPEN(bios_file, name, READ);
+  FILE_OPEN(bios_file, filename, READ);
 
   if (FILE_CHECK_VALID(bios_file))
   {

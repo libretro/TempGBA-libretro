@@ -214,9 +214,9 @@ CPU_ALERT_TYPE dma_transfer(DmaTransferType *dma);
 
 u8 *load_gamepak_page(u32 physical_index);
 
-s32 load_bios(char *name);
-s32 load_gamepak(const char *name);
-s32 load_backup(char *name);
+s32 load_bios(char *filename);
+s32 load_gamepak(const char *filename);
+s32 load_backup(char *filename);
 
 u32 read_eeprom(void);
 u32 read_backup(u32 address);
