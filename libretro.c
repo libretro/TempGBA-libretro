@@ -148,16 +148,32 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+bool string_endswith_newline(const char *string)
+{
+  if (!string) return false;
+  return strcmp(string + strlen(string) - 1, "\n") == 0;
+}
+
 void error_msg(const char *text)
 {
    if (log_cb)
-      log_cb(RETRO_LOG_ERROR, text);
+   {
+      if (string_endswith_newline(text))
+         log_cb(RETRO_LOG_ERROR, text);
+      else
+         log_cb(RETRO_LOG_ERROR, "%s\n", text);
+   }
 }
 
 void info_msg(const char *text)
 {
    if (log_cb)
-      log_cb(RETRO_LOG_INFO, text);
+   {
+      if (string_endswith_newline(text))
+         log_cb(RETRO_LOG_INFO, text);
+      else
+         log_cb(RETRO_LOG_INFO, "%s\n", text);
+   }
 }
 
 static void extract_directory(char *buf, const char *path, size_t size)
