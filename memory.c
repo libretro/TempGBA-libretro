@@ -3222,9 +3222,34 @@ static s32 load_gamepak_raw(const char *filename)
   return -1;
 }
 
+/*
+ * If a game is loaded from RetroArch by browsing to a zip file and selecting Browse Archive, a path could get sent that
+ * looks like this: ms0:/PSP/RETROARCH/Games/test/4MBandUp/metroidzeromission.zip#metroidzeromission.gba
+ * This function takes that path and strips everything after .zip so the core can load the ROM inside normally.
+ */
+const char* strip_compressed_gamepak_path(const char *filename)
+{
+  size_t stripped_filename_size = MAX_PATH * sizeof(char);
+  char *stripped_filename = (char*)malloc(stripped_filename_size);
+
+  strlcpy(stripped_filename, filename, stripped_filename_size);
+
+  char *delim = NULL;
+
+  // Look for .zip# in the filename
+  delim = strcasestr(stripped_filename, ".zip#");
+
+  // If found, replace the # with \0 to terminate the filename
+  if (delim)
+    *(delim + 4) = '\0';
+
+  return stripped_filename;
+}
+
 s32 load_gamepak(const char *filename)
 {
-  char *dot_position = strrchr(filename, '.');
+  const char *stripped_filename = strip_compressed_gamepak_path(filename);
+  char *dot_position = strrchr(stripped_filename, '.');
 
   s32 file_size = -1;
   gamepak_file_large = -1;
@@ -3233,13 +3258,13 @@ s32 load_gamepak(const char *filename)
 
   if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
   {
-    file_size = load_file_zip(filename);
+    file_size = load_file_zip(stripped_filename);
   }
   else
 
   if (!strcasecmp(dot_position, ".gba") || !strcasecmp(dot_position, ".agb") || !strcasecmp(dot_position, ".bin"))
   {
-    file_size = load_gamepak_raw(filename);
+    file_size = load_gamepak_raw(stripped_filename);
   }
 
   if (file_size > 0)
@@ -3247,11 +3272,11 @@ s32 load_gamepak(const char *filename)
     info_msg("Searching BACKUP ID");
     gamepak_size = (file_size + 0x7FFF) & ~0x7FFF;
 
-    char *p = strrchr(filename, '/');
+    char *p = strrchr(stripped_filename, '/');
     if (p != NULL)
-      filename = p + 1;
+      stripped_filename = p + 1;
 
-    sprintf(gamepak_filename, "%s", filename);
+    sprintf(gamepak_filename, "%s", stripped_filename);
 
     char game_title[13];
     char game_code[5];
