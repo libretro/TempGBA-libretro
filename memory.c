@@ -3223,23 +3223,24 @@ static s32 load_gamepak_raw(const char *filename)
 }
 
 /*
- * If a game is loaded from RetroArch by browsing to a zip file and selecting Browse Archive, a path could get sent that
- * looks like this: ms0:/PSP/RETROARCH/Games/test/4MBandUp/metroidzeromission.zip#metroidzeromission.gba
- * This function takes that path and strips everything after .zip so the core can load the ROM inside normally.
+ * If a game is loaded from RetroArch by browsing to a zip file and selecting
+ * Browse Archive, a path could get sent that looks like this:
+ * ms0:/PSP/RETROARCH/Games/test/4MBandUp/metroidzeromission.zip#metroidzeromission.gba
+ * This function takes that path and strips everything after .zip so the core
+ * can load the ROM inside normally.
  */
 const char* strip_compressed_gamepak_path(const char *filename)
 {
   size_t stripped_filename_size = MAX_PATH * sizeof(char);
-  char *stripped_filename = (char*)malloc(stripped_filename_size);
+  char *stripped_filename       = (char*)malloc(stripped_filename_size);
+  char *delim                   = NULL;
 
   strlcpy(stripped_filename, filename, stripped_filename_size);
 
-  char *delim = NULL;
-
-  // Look for .zip# in the filename
+  /* Look for .zip# in the filename */
   delim = strcasestr(stripped_filename, ".zip#");
 
-  // If found, replace the # with \0 to terminate the filename
+  /* If found, replace the # with \0 to terminate the filename */
   if (delim)
     *(delim + 4) = '\0';
 
@@ -3249,9 +3250,9 @@ const char* strip_compressed_gamepak_path(const char *filename)
 s32 load_gamepak(const char *filename)
 {
   const char *stripped_filename = strip_compressed_gamepak_path(filename);
-  char *dot_position = strrchr(stripped_filename, '.');
+  char *dot_position            = strrchr(stripped_filename, '.');
+  s32 file_size                 = -1;
 
-  s32 file_size = -1;
   gamepak_file_large = -1;
 
   info_msg("Now Loading...");

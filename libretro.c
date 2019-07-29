@@ -55,9 +55,9 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name = "TempGBA";
    info->library_version = "26731013";
-   // Just pass the path of the ROM to the core and let it handle reading the ROM
+   /* Just pass the path of the ROM to the core and let it handle reading the ROM */
    info->need_fullpath = true;
-   // Tell the frontend (RetroArch) not to extract the ROM; the core will handle extraction
+   /* Tell the frontend (RetroArch) not to extract the ROM; the core will handle extraction */
    info->block_extract = true;
    info->valid_extensions = "gba|bin|agb|gbz|zip";
 }
