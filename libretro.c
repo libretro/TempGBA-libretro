@@ -55,9 +55,11 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    info->library_name = "TempGBA";
    info->library_version = "26731013";
+   /* Just pass the path of the ROM to the core and let it handle reading the ROM */
    info->need_fullpath = true;
-   info->block_extract = false;
-   info->valid_extensions = "gba|bin|agb|gbz" ;
+   /* Tell the frontend (RetroArch) not to extract the ROM; the core will handle extraction */
+   info->block_extract = true;
+   info->valid_extensions = "gba|bin|agb|gbz|zip";
 }
 
 
@@ -148,16 +150,32 @@ bool retro_unserialize(const void *data, size_t size)
 void retro_cheat_reset(void) {}
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {}
 
+bool string_endswith_newline(const char *string)
+{
+  if (!string) return false;
+  return strcmp(string + strlen(string) - 1, "\n") == 0;
+}
+
 void error_msg(const char *text)
 {
    if (log_cb)
-      log_cb(RETRO_LOG_ERROR, text);
+   {
+      if (string_endswith_newline(text))
+         log_cb(RETRO_LOG_ERROR, text);
+      else
+         log_cb(RETRO_LOG_ERROR, "%s\n", text);
+   }
 }
 
 void info_msg(const char *text)
 {
    if (log_cb)
-      log_cb(RETRO_LOG_INFO, text);
+   {
+      if (string_endswith_newline(text))
+         log_cb(RETRO_LOG_INFO, text);
+      else
+         log_cb(RETRO_LOG_INFO, "%s\n", text);
+   }
 }
 
 static void extract_directory(char *buf, const char *path, size_t size)
