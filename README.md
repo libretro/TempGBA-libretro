@@ -1,3 +1,74 @@
+# TempGBA-libretro
+
+Game Boy Advance emulator
+
+## Credits
+
+#### Origins of TempGBA-libretro
+
+- gpSP
+    - Original GBA emulator for PSP by Exophase
+    - Mirror: [https://github.com/BASLQC/gPSP](https://github.com/BASLQC/gPSP)
+
+- [gpSP Kai](https://osdn.net/projects/gpsp-kai/)
+    - Fork of gpSP by takka
+    - Mirror: [https://github.com/uberushaximus/gpsp-kai](https://github.com/uberushaximus/gpsp-kai)
+
+- [TempGBA](https://github.com/Nebuleon/TempGBA)
+    - Port of gpSP Kai for the Nintendo DS by Nebuleon, Normmatt and BassAceGold
+
+- TempGBA4PSP
+    - Port of TempGBA back to the PSP by an unknown author
+    - Latest version is [TempGBA4PSP-26731020](http://www2.axfc.net/u/3063963)
+
+- TempGBA-libretro (this repository)
+    - Based on [TempGBA4PSP-26731013](http://www2.axfc.net/u/3057449)
+
+
+
+## Usage
+
+#### BIOS
+
+Before using this core, you must copy a GBA BIOS (MD5: `a860e8c0b6d573d191e4ec7db1b1e4f6`) to this location on the PSP:
+
+PSP/RETROARCH/SYSTEM/gba_bios.bin
+
+
+#### Compressed ROMs
+
+ROMs may be loaded from compressed files with the following caveats:
+
+- Only .zip files are supported at this time
+- Each .zip file must contain only one ROM
+
+
+
+## Compiling
+
+#### Compile retroarch core using libretro-super
+
+```
+git clone https://github.com/libretro/libretro-super.git
+cd libretro-super
+# Use gcc 4.6.4 to work around https://github.com/pspdev/psptoolchain/issues/98
+docker run --rm -v "$PWD:/build" -e SINGLE_CORE=tempgba -e FORCE=YES -e NOCLEAN=1 -e EXIT_ON_ERROR=1 bmaupin/pspdev:gcc-4.6.4 ./libretro-buildbot-recipe.sh recipes/playstation/psp
+```
+
+The fully built core will be in libretro-super/retroarch/pkg/psp1/cores/tempgba_libretro.PBP
+
+
+#### Compile just the library/object files locally
+
+```
+docker run --rm -v "$PWD:/build" bmaupin/pspdev:gcc-4.6.4 sh -c "make clean && make"
+```
+
+
+
+## Original readme (machine translated from Japanese)
+
+```
 - TempGBA-libretro -
 ================
 
@@ -158,4 +229,4 @@ Language
   FLASH1M_Vnnn FLASH 128 Kbytes (1Mbit)
 
   "nnn", the tool version of. I do not use to determine the save type.
-  
+```
