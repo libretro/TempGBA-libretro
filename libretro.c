@@ -18,8 +18,15 @@ struct retro_perf_callback perf_cb;
 static SceUID main_thread;
 static SceUID cpu_thread;
 
-static u32 option_frameskip_value = 0;
+/* Disable frame skipping by default since most games don't seem to need it */
+static u32 option_frameskip_type = FRAMESKIP_NONE;
+static u32 option_frameskip_value = 9;
 static u32 num_skipped_frames = 0;
+/* Count of the actual number of frames drawn */
+static u32 real_frame_count = 0;
+static u32 virtual_frame_count = 0;
+
+static void vblank_interrupt_handler(u32 sub, u32 *parg);
 
 void switch_to_main_thread(void)
 {
@@ -108,6 +115,7 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
 
    struct retro_variable vars[] = {
+      { "tempgba_frameskip_type", "Frameskip type; off|auto|manual" },
       { "tempgba_frameskip_value", "Frameskip value; 0|1|2|3|4|5|6|7|8|9" },
       { 0, 0 }
    };
@@ -200,6 +208,33 @@ static void extract_directory(char *buf, const char *path, size_t size)
       strncpy(buf, ".", size);
 }
 
+static void vblank_interrupt_handler(u32 sub, u32 *parg)
+{
+  real_frame_count++;
+}
+
+static void check_variables(void)
+{
+   struct retro_variable var = {
+      .key = "tempgba_frameskip_value",
+      .value = 0
+   };
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      option_frameskip_value = strtol(var.value, NULL, 10);
+
+   var.key = "tempgba_frameskip_type";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "off"))
+         option_frameskip_type = FRAMESKIP_NONE;
+      else if (!strcmp(var.value, "auto"))
+         option_frameskip_type = FRAMESKIP_AUTO;
+      else if (!strcmp(var.value, "manual"))
+         option_frameskip_type = FRAMESKIP_MANUAL;
+   }
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    char filename_bios[MAX_PATH];
@@ -232,6 +267,9 @@ bool retro_load_game(const struct retro_game_info *info)
          log_cb(RETRO_LOG_INFO, "[TempGBA]: 0RGB1555 is not supported.\n");
       return false;
    }
+
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
+   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
    extract_directory(main_path,info->path,sizeof(main_path));
 
@@ -270,9 +308,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    init_context_switch();
 
+   check_variables();
+
    return true;
 }
-
 
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
 {
@@ -328,16 +367,6 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-static void check_variables(void)
-{
-   struct retro_variable var = {
-      .key = "tempgba_frameskip_value",
-      .value = 0
-   };
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      option_frameskip_value = strtol(var.value, NULL, 10);
-}
-
 #include<psprtc.h>
 
 void retro_run(void)
@@ -347,19 +376,40 @@ void retro_run(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
 
-   if (num_skipped_frames < option_frameskip_value)
+   skip_next_frame = 0;
+   virtual_frame_count++;
+
+   if (option_frameskip_type == FRAMESKIP_MANUAL)
    {
-      num_skipped_frames++;
-      skip_next_frame = 1;
-   } else {
-      num_skipped_frames = 0;
-      skip_next_frame = 0;
+      if (num_skipped_frames < option_frameskip_value)
+      {
+         skip_next_frame = 1;
+         num_skipped_frames++;
+      } else {
+         num_skipped_frames = 0;
+      }
+   }
+   else if (option_frameskip_type == FRAMESKIP_AUTO)
+   {
+      if ((real_frame_count > virtual_frame_count) &&
+         (num_skipped_frames < option_frameskip_value))
+      {
+         skip_next_frame = 1;
+         num_skipped_frames++;
+      }
+      else
+      {
+         real_frame_count = 0;
+         virtual_frame_count = 0;
+
+         num_skipped_frames = 0;
+      }
    }
 
    input_poll_cb();
 
-   uint64_t start_tick, end_tick;
-   sceRtcGetCurrentTick(&start_tick);
+   // uint64_t start_tick, end_tick;
+   // sceRtcGetCurrentTick(&start_tick);
 
 
    switch_to_cpu_thread();
@@ -367,16 +417,16 @@ void retro_run(void)
    update_input();
 
 
-   sceRtcGetCurrentTick(&end_tick);
+   // sceRtcGetCurrentTick(&end_tick);
 //   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
-   static int frames = 0;
-   static float total = 0.0;
+   // static int frames = 0;
+   // static float total = 0.0;
 
-   if ( frames >= 200)
-      total += (end_tick - start_tick);
+   // if ( frames >= 200)
+   //    total += (end_tick - start_tick);
 
-   if (frames++ == 400)
-      printf("total : %f\n", total / 200.0);
+   // if (frames++ == 400)
+   //    printf("total : %f\n", total / 200.0);
 
    render_audio();
 

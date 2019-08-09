@@ -72,12 +72,6 @@ extern u32 enable_home_menu;
 
 extern u32 sleep_flag;
 
-extern u32 synchronize_flag;
-extern u32 psp_fps_debug;
-
-extern u32 real_frame_count;
-extern u32 virtual_frame_count;
-
 void direct_sound_timer_select(u32 value);
 
 void timer_control_low(u8 timer_number, u32 value);

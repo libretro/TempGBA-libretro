@@ -74,7 +74,6 @@ u8 cpu_init_state = 0;
 
 u32 skip_next_frame = 0;
 u32 frames = 0;
-u32 vblank_count = 0;
 
 static u8 caches_inited = 0;
 
@@ -495,6 +494,9 @@ static void init_main(void)
 void quit_gba(void)
 {
   memory_term();
+
+  sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
+  sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
 }
 
 void reset_gba(void)
