@@ -18,6 +18,9 @@ struct retro_perf_callback perf_cb;
 static SceUID main_thread;
 static SceUID cpu_thread;
 
+static u32 option_frameskip_value = 0;
+static u32 num_skipped_frames = 0;
+
 void switch_to_main_thread(void)
 {
    sceKernelWakeupThread(main_thread);
@@ -104,6 +107,12 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
 
+   struct retro_variable vars[] = {
+      { "tempgba_frameskip_value", "Frameskip value; 0|1|2|3|4|5|6|7|8|9" },
+      { 0, 0 }
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, vars);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -321,7 +330,12 @@ size_t retro_get_memory_size(unsigned id)
 
 static void check_variables(void)
 {
-
+   struct retro_variable var = {
+      .key = "tempgba_frameskip_value",
+      .value = 0
+   };
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      option_frameskip_value = strtol(var.value, NULL, 10);
 }
 
 #include<psprtc.h>
@@ -329,6 +343,18 @@ static void check_variables(void)
 void retro_run(void)
 {
    bool updated = false;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
+   if (num_skipped_frames < option_frameskip_value)
+   {
+      num_skipped_frames++;
+      skip_next_frame = 1;
+   } else {
+      num_skipped_frames = 0;
+      skip_next_frame = 0;
+   }
 
    input_poll_cb();
 
@@ -400,10 +426,6 @@ void retro_run(void)
    else
 #endif
       video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-       check_variables();
-
 }
 
 unsigned retro_api_version(void)
