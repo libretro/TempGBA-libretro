@@ -20,7 +20,8 @@ static SceUID cpu_thread;
 
 /* Disable frame skipping by default since most games don't seem to need it */
 static u32 option_frameskip_type = FRAMESKIP_NONE;
-static u32 option_frameskip_value = 9;
+/* Use a low default for less choppy video when frame skipping is enabled */
+static u32 option_frameskip_value = 1;
 static u32 num_skipped_frames = 0;
 /* Count of the actual number of frames drawn */
 static u32 real_frame_count = 0;
