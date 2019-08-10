@@ -44,6 +44,23 @@ ROMs may be loaded from compressed files with the following caveats:
 
 
 
+#### Frame skipping
+
+Some ROMs may need frame skipping enabled for acceptable performance. A typical
+problem that frame skipping can work around is if the audio is making
+crackling, stuttering, or popping sounds.
+
+Enable frame skipping by going to the core options and setting *Frameskip type*
+to *auto* or *manual* as desired. Then set *Frameskip value* to *1* and
+increase it as necessary.
+
+Known games that benefit from frame skipping enabled:
+
+- Metroid: Zero Mission
+- Mother 3
+
+
+
 ## Compiling
 
 #### Compile retroarch core using libretro-super
