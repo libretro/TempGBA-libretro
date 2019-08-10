@@ -476,7 +476,9 @@ void retro_run(void)
       video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
    else
 #endif
-      video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
+      /* Skip the video callback when skipping frames so the frontend can properly report FPS */
+      if (!skip_next_frame)
+         video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
 }
 
 unsigned retro_api_version(void)
