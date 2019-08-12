@@ -43,21 +43,27 @@ ROMs may be loaded from compressed files with the following caveats:
 - Each .zip file must contain only one ROM
 
 
-
 #### Frame skipping
 
 Some ROMs may need frame skipping enabled for acceptable performance. A typical
 problem that frame skipping can work around is if the audio is making
 crackling, stuttering, or popping sounds.
 
-Enable frame skipping by going to the core options and setting *Frameskip type*
-to *auto* or *manual* as desired. Then set *Frameskip value* to *1* and
-increase it as necessary.
+Enable frame skipping by going to the core options and set *Frameskip type* as
+desired:
 
-Known games that benefit from frame skipping enabled:
+- *manual* will use a consistent framerate that will be slower but smoother
+- *auto* will use a variable framerate that will only slow down when necessary
+  at the risk of choppier video when this happens
 
-- Metroid: Zero Mission
-- Mother 3
+*Frameskip value* determines the number of frames that will be skipped per
+frame played. Generally, the lower the better. For example, setting this to *1*
+will skip every other frame, cutting the framerate from the default 60 FPS to
+30 FPS.
+
+See here to get an idea of games that may benefit from frame skipping:
+
+[TempGBA Compatibility List](https://wiki.gbatemp.net/wiki/TempGBA_Compatibility)
 
 
 
