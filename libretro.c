@@ -409,25 +409,27 @@ void retro_run(void)
 
    input_poll_cb();
 
-   // uint64_t start_tick, end_tick;
-   // sceRtcGetCurrentTick(&start_tick);
-
+#ifdef HW_RENDER_TEST
+   uint64_t start_tick, end_tick;
+   sceRtcGetCurrentTick(&start_tick);
+#endif
 
    switch_to_cpu_thread();
 
    update_input();
 
+#ifdef HW_RENDER_TEST
+   sceRtcGetCurrentTick(&end_tick);
+// printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
+   static int frames = 0;
+   static float total = 0.0;
 
-   // sceRtcGetCurrentTick(&end_tick);
-//   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
-   // static int frames = 0;
-   // static float total = 0.0;
+   if ( frames >= 200)
+      total += (end_tick - start_tick);
 
-   // if ( frames >= 200)
-   //    total += (end_tick - start_tick);
-
-   // if (frames++ == 400)
-   //    printf("total : %f\n", total / 200.0);
+   if (frames++ == 400)
+      printf("total : %f\n", total / 200.0);
+#endif
 
    render_audio();
 
