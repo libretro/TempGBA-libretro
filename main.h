@@ -60,9 +60,9 @@ extern u32 option_enable_analog;
 extern u32 option_analog_sensitivity;
 extern u32 option_language;
 
-extern u32 option_frameskip_type;
-extern u32 option_frameskip_value;
 extern u32 option_clock_speed;
+
+extern u32 skip_next_frame;
 
 extern char main_path[MAX_PATH];
 extern char dir_save[MAX_PATH];
@@ -71,12 +71,6 @@ extern int date_format;
 extern u32 enable_home_menu;
 
 extern u32 sleep_flag;
-
-extern u32 synchronize_flag;
-extern u32 psp_fps_debug;
-
-extern u32 real_frame_count;
-extern u32 virtual_frame_count;
 
 void direct_sound_timer_select(u32 value);
 

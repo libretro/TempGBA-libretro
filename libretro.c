@@ -18,6 +18,17 @@ struct retro_perf_callback perf_cb;
 static SceUID main_thread;
 static SceUID cpu_thread;
 
+/* Disable frame skipping by default since most games don't seem to need it */
+static u32 option_frameskip_type = FRAMESKIP_NONE;
+/* Use a low default for less choppy video when frame skipping is enabled */
+static u32 option_frameskip_value = 1;
+static u32 num_skipped_frames = 0;
+/* Count of the actual number of frames drawn */
+static u32 real_frame_count = 0;
+static u32 virtual_frame_count = 0;
+
+static void vblank_interrupt_handler(u32 sub, u32 *parg);
+
 void switch_to_main_thread(void)
 {
    sceKernelWakeupThread(main_thread);
@@ -104,6 +115,13 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf_cb);
 
+   struct retro_variable vars[] = {
+      { "tempgba_frameskip_type", "Frameskip type; off|auto|manual" },
+      { "tempgba_frameskip_value", "Frameskip value; 0|1|2|3|4|5|6|7|8|9" },
+      { 0, 0 }
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, vars);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -191,6 +209,33 @@ static void extract_directory(char *buf, const char *path, size_t size)
       strncpy(buf, ".", size);
 }
 
+static void vblank_interrupt_handler(u32 sub, u32 *parg)
+{
+  real_frame_count++;
+}
+
+static void check_variables(void)
+{
+   struct retro_variable var = {
+      .key = "tempgba_frameskip_value",
+      .value = 0
+   };
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      option_frameskip_value = strtol(var.value, NULL, 10);
+
+   var.key = "tempgba_frameskip_type";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "off"))
+         option_frameskip_type = FRAMESKIP_NONE;
+      else if (!strcmp(var.value, "auto"))
+         option_frameskip_type = FRAMESKIP_AUTO;
+      else if (!strcmp(var.value, "manual"))
+         option_frameskip_type = FRAMESKIP_MANUAL;
+   }
+}
+
 bool retro_load_game(const struct retro_game_info *info)
 {
    char filename_bios[MAX_PATH];
@@ -223,6 +268,9 @@ bool retro_load_game(const struct retro_game_info *info)
          log_cb(RETRO_LOG_INFO, "[TempGBA]: 0RGB1555 is not supported.\n");
       return false;
    }
+
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
+   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
    extract_directory(main_path,info->path,sizeof(main_path));
 
@@ -261,9 +309,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    init_context_switch();
 
+   check_variables();
+
    return true;
 }
-
 
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
 {
@@ -319,30 +368,59 @@ size_t retro_get_memory_size(unsigned id)
    return 0;
 }
 
-static void check_variables(void)
-{
-
-}
-
 #include<psprtc.h>
 
 void retro_run(void)
 {
    bool updated = false;
 
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
+   skip_next_frame = 0;
+   virtual_frame_count++;
+
+   if (option_frameskip_type == FRAMESKIP_MANUAL)
+   {
+      if (num_skipped_frames < option_frameskip_value)
+      {
+         skip_next_frame = 1;
+         num_skipped_frames++;
+      } else {
+         num_skipped_frames = 0;
+      }
+   }
+   else if (option_frameskip_type == FRAMESKIP_AUTO)
+   {
+      if ((real_frame_count > virtual_frame_count) &&
+         (num_skipped_frames < option_frameskip_value))
+      {
+         skip_next_frame = 1;
+         num_skipped_frames++;
+      }
+      else
+      {
+         real_frame_count = 0;
+         virtual_frame_count = 0;
+
+         num_skipped_frames = 0;
+      }
+   }
+
    input_poll_cb();
 
+#ifdef HW_RENDER_TEST
    uint64_t start_tick, end_tick;
    sceRtcGetCurrentTick(&start_tick);
-
+#endif
 
    switch_to_cpu_thread();
 
    update_input();
 
-
+#ifdef HW_RENDER_TEST
    sceRtcGetCurrentTick(&end_tick);
-//   printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
+// printf("frame time : %u\n", (uint32_t)(end_tick - start_tick));
    static int frames = 0;
    static float total = 0.0;
 
@@ -351,6 +429,7 @@ void retro_run(void)
 
    if (frames++ == 400)
       printf("total : %f\n", total / 200.0);
+#endif
 
    render_audio();
 
@@ -399,11 +478,9 @@ void retro_run(void)
       video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, GBA_LINE_SIZE * 2);
    else
 #endif
-      video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-       check_variables();
-
+      /* Skip the video callback when skipping frames so the frontend can properly report FPS */
+      if (!skip_next_frame)
+         video_cb(RETRO_HW_FRAME_BUFFER_VALID, GBA_SCREEN_WIDTH, GBA_SCREEN_HEIGHT, 512);
 }
 
 unsigned retro_api_version(void)

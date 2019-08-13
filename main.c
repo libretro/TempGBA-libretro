@@ -72,8 +72,8 @@ s32 video_count = 272;
 u32 irq_ticks = 0;
 u8 cpu_init_state = 0;
 
+u32 skip_next_frame = 0;
 u32 frames = 0;
-u32 vblank_count = 0;
 
 static u8 caches_inited = 0;
 
@@ -288,7 +288,8 @@ u32 update_gba(void)
            else
 #endif
            {
-             update_scanline();
+              if (!skip_next_frame)
+                 update_scanline();
            }
 
           // If in visible area also fire HDMA
@@ -449,7 +450,6 @@ static void init_main(void)
 
   init_cpu();
 
-
   for (i = 0; i < 4; i++)
   {
     memset(&dma[i], 0, sizeof(DmaTransferType));
@@ -494,6 +494,9 @@ static void init_main(void)
 void quit_gba(void)
 {
   memory_term();
+
+  sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
+  sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
 }
 
 void reset_gba(void)
